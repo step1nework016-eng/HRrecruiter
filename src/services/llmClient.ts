@@ -18,30 +18,16 @@ export async function generateText(
   temperature: number = 0.7
 ): Promise<string> {
   try {
-    // 嘗試使用最新的模型名稱，如果失敗則回退到 gemini-pro
-    let model;
-    try {
-      model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash', // 使用較新的模型
-        generationConfig: {
-          temperature,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        },
-      });
-    } catch (modelError) {
-      console.warn('嘗試使用 gemini-1.5-flash 失敗，回退到 gemini-pro');
-      model = genAI.getGenerativeModel({ 
-        model: 'gemini-pro',
-        generationConfig: {
-          temperature,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        },
-      });
-    }
+    // 使用 Gemini 2.0 Flash 模型
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      },
+    });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -67,30 +53,16 @@ export async function generateChat(
   systemPrompt?: string
 ): Promise<string> {
   try {
-    // 嘗試使用最新的模型名稱，如果失敗則回退到 gemini-pro
-    let model;
-    try {
-      model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash', // 使用較新的模型
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        },
-      });
-    } catch (modelError) {
-      console.warn('嘗試使用 gemini-1.5-flash 失敗，回退到 gemini-pro');
-      model = genAI.getGenerativeModel({ 
-        model: 'gemini-pro',
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        },
-      });
-    }
+    // 使用 Gemini 2.0 Flash 模型
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      },
+    });
 
     // 組合完整提示詞
     let fullPrompt = '';

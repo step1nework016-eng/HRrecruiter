@@ -22,6 +22,13 @@
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
     }
+    /* 確保所有文字都可以選擇和複製 */
+    body, html {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
     body {
       background: var(--bg);
       color: var(--text-main);
@@ -97,6 +104,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
     }
     .step-item:hover {
       background: #f9fafb;
@@ -261,6 +272,10 @@
       font-size: 11px;
       color: var(--text-soft);
       margin-bottom: 6px;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
     }
     textarea {
       width: 100%;
@@ -287,6 +302,11 @@
       max-height: 320px;
       white-space: pre-wrap;
       word-break: break-word;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+      cursor: text;
     }
     .toolbar {
       margin-top: 10px;
@@ -385,6 +405,10 @@
     .chat-empty {
       font-size: 12px;
       color: var(--text-soft);
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
     }
     .chat-msg {
       margin-bottom: 8px;
@@ -399,6 +423,10 @@
       padding: 8px 10px;
       border-radius: 14px;
       line-height: 1.5;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
     }
     .chat-msg.me .chat-bubble {
       background: #0ea5e9;
@@ -487,6 +515,11 @@
       line-height: 1.6;
       white-space: pre-wrap;
       word-wrap: break-word;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+      cursor: text;
     }
     .chat-content strong {
       font-weight: 600;

@@ -20,17 +20,21 @@ FROM node:20-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 
+# 複製 package.json 和 prisma schema
 COPY package*.json ./
+COPY prisma ./prisma/
+
 # 安裝 production 依賴（包含 @prisma/client）
 RUN npm install --omit=dev
 
-# 複製 prisma schema
-COPY prisma ./prisma/
+# ⭐ 關鍵：安裝 prisma CLI 來生成客戶端（臨時安裝，生成後可移除）
+RUN npm install prisma --save-dev
 
-# ⭐ 關鍵：從 builder 階段複製生成的 Prisma 客戶端
-# Prisma 客戶端生成在 node_modules/.prisma/client 和 node_modules/@prisma/client 中
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+# 生成 Prisma 客戶端（必須在 runtime 階段生成，因為它依賴於當前的 node_modules 結構）
+RUN npx prisma generate
+
+# 移除 prisma CLI（可選，減少映像大小）
+RUN npm uninstall prisma
 
 # 複製編譯後的代碼
 COPY --from=builder /app/dist ./dist

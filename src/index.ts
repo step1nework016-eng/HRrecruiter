@@ -11,13 +11,17 @@ import hrSavedRouter from './routes/hrSaved';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// ⚠️ 這裡一定要把 PORT 轉成 number，不然 TS 會報錯
+const PORT: number = Number(process.env.PORT) || 3000;
 
 // 中間件
-app.use(cors({
-  origin: '*', // TODO: 生產環境請改為特定網域，例如 ['http://localhost:3000', 'https://yourdomain.com']
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: '*', // TODO: 生產環境請改為特定網域，例如 ['http://localhost:3000', 'https://yourdomain.com']
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -49,10 +53,17 @@ app.get('*', (req, res, next) => {
 });
 
 // 錯誤處理中間件
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('未處理的錯誤:', err);
-  res.status(500).json({ error: '伺服器內部錯誤' });
-});
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    console.error('未處理的錯誤:', err);
+    res.status(500).json({ error: '伺服器內部錯誤' });
+  },
+);
 
 // 404 處理（API 路由）
 app.use('/api/*', (req, res) => {
@@ -62,13 +73,12 @@ app.use('/api/*', (req, res) => {
 // 啟動伺服器（監聽 0.0.0.0 以支援容器部署）
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 伺服器已啟動在 http://0.0.0.0:${PORT}`);
-  console.log(`📝 API 端點:`);
-  console.log(`   POST /api/hr-agent - 四個功能的 LLM 產生`);
-  console.log(`   POST /api/hr-chat - 與 AI 對話`);
-  console.log(`   POST /api/hr-save - 儲存結果`);
-  console.log(`   GET  /api/hr-saved - 查詢已儲存紀錄`);
-  console.log(`\n⚠️  請確認已設定以下環境變數:`);
-  console.log(`   - DATABASE_URL`);
-  console.log(`   - GEMINI_API_KEY`);
+  console.log('📝 API 端點:');
+  console.log('   POST /api/hr-agent - 四個功能的 LLM 產生');
+  console.log('   POST /api/hr-chat - 與 AI 對話');
+  console.log('   POST /api/hr-save - 儲存結果');
+  console.log('   GET  /api/hr-saved - 查詢已儲存紀錄');
+  console.log('\n⚠️  請確認已設定以下環境變數:');
+  console.log('   - DATABASE_URL');
+  console.log('   - GEMINI_API_KEY');
 });
-

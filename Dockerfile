@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 安裝依賴
-RUN npm ci
+# 安裝依賴（使用 npm install 因為可能沒有 package-lock.json）
+RUN npm install
 
 # 複製所有檔案
 COPY . .

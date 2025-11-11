@@ -477,9 +477,6 @@
         手機版：點上面的功能，<br />
         會打開全螢幕生成頁，按「✕」後關閉，<br />
         只留下下面的 AI 對話框。
-        <div class="pill">
-          🔌 Frontend → Backend → LLM
-        </div>
       </div>
     </aside>
 
@@ -492,13 +489,13 @@
             <div class="main-title-wrap">
               <div class="main-title" id="main-title">① 職缺需求（Job Intake）</div>
               <div class="main-subtitle" id="main-subtitle">
-                HR 貼上職缺說明（JD） → 後端呼叫 LLM 生成人才畫像與結構化欄位
+                HR 貼上職缺說明（JD） → AI 自動生成人才畫像與結構化欄位
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <div class="badge-ai">
                 <div class="badge-dot"></div>
-                LLM Agent Connected
+                AI 已就緒
               </div>
               <button class="tool-close-btn" id="tool-close-btn">✕ 關閉</button>
             </div>
@@ -521,7 +518,7 @@
               <div class="toolbar">
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
                   <button class="btn-primary" id="run-btn">
-                    ⚡ 送出給後端 & LLM 分析
+                    ⚡ 開始 AI 分析
                   </button>
                   <button class="btn-primary" id="retry-btn" disabled
                     style="background:#e5e7eb;color:#374151;box-shadow:none;">
@@ -532,11 +529,6 @@
                     💾 儲存
                   </button>
                 </div>
-                <div>
-                  <span style="font-size:11px;color:var(--text-soft);">
-                    會 POST 到 <code>/api/hr-agent</code>，儲存則呼叫 <code>/api/hr-save</code>
-                  </span>
-                </div>
               </div>
               <div class="status" id="status">
                 <span class="dot"></span> 等待送出…
@@ -545,19 +537,14 @@
 
             <!-- 右：輸出 -->
             <div>
-              <h4>AI 回傳結果（由後端轉給前端）</h4>
+              <h4>AI 回傳結果</h4>
               <p class="hint">
-                顯示後端回傳的 <code>result</code> 欄位內容（字串或 JSON 都可）。
+                AI 分析結果將顯示在這裡
               </p>
-              <pre id="output-pre">// 點「送出給後端 & LLM 分析」後會顯示結果</pre>
+              <pre id="output-pre">點「開始 AI 分析」後會顯示結果</pre>
             </div>
           </div>
 
-          <div class="chip-row">
-            <div class="chip">步驟以 <code>step</code> 傳給後端：job_intake / sourcing / screening / interview</div>
-            <div class="chip">後端負責選 Prompt、串 LLM、整理 JSON</div>
-            <div class="chip">儲存 API 會收到：<code>{ step, input, result }</code></div>
-          </div>
         </div>
       </section>
 
@@ -622,7 +609,7 @@
     const STEP_CONFIG = {
       "1": {
         title: "① 職缺需求（Job Intake）",
-        subtitle: "HR 貼上職缺說明（JD） → 後端呼叫 LLM 生成人才畫像與結構化欄位",
+        subtitle: "HR 貼上職缺說明（JD） → AI 自動生成人才畫像與結構化欄位",
         hint: "目前步驟：職缺需求（Job Intake）。請貼上完整 JD。",
         stepKey: "job_intake"
       },
@@ -634,13 +621,13 @@
       },
       "3": {
         title: "③ 初步篩選（Screening）",
-        subtitle: "輸入 JD＋履歷 → LLM 評估匹配度、優勢、風險與建議提問",
+        subtitle: "輸入 JD＋履歷 → AI 評估匹配度、優勢、風險與建議提問",
         hint: "目前步驟：初步篩選（Screening）。建議格式：先貼 JD，再貼履歷，中間用 --- 分隔。",
         stepKey: "screening"
       },
       "4": {
         title: "④ 面試階段（Interview）",
-        subtitle: "貼上面試逐字稿 → LLM 產出摘要、優勢/疑慮與分數評估",
+        subtitle: "貼上面試逐字稿 → AI 產出摘要、優勢/疑慮與分數評估",
         hint: "目前步驟：面試階段（Interview）。請貼上面試逐字稿（已轉文字）。",
         stepKey: "interview"
       }
@@ -684,9 +671,9 @@
         inputHint.textContent = conf.hint;
 
         outputPre.textContent =
-          "// 已切換到：" +
+          "已切換到：" +
           conf.title +
-          "。\n// 貼上內容後，點下方按鈕送出給後端 & LLM。";
+          "。\n貼上內容後，點下方按鈕開始分析。";
         setStatus("", "已切換步驟，等待送出…");
 
         // 切換步驟後，清掉上一筆暫存結果
@@ -708,7 +695,7 @@
     async function callHrAgent(isRetry = false) {
       const text = inputText.value.trim();
       if (!text) {
-        setStatus("error", "請先在左側貼上內容，再送出給後端。");
+        setStatus("error", "請先在左側貼上內容，再開始分析。");
         return;
       }
 
@@ -721,9 +708,9 @@
       const actionText = isRetry ? "（再換一個）" : "";
       setStatus(
         "loading",
-        "正在呼叫後端 API：" + API_URL + "，step=" + conf.stepKey + " " + actionText
+        "正在處理中，請稍候…" + actionText
       );
-      outputPre.textContent = "// 請稍候，後端正在呼叫 LLM…";
+      outputPre.textContent = "請稍候，AI 正在分析中…";
 
       try {
         const res = await fetch(API_URL, {
@@ -746,7 +733,7 @@
         let display;
 
         if (data == null) {
-          display = "// 後端回傳空內容。";
+          display = "未收到有效結果，請稍後再試。";
           resultObject = null;
         } else if (typeof data.result === "string") {
           display = data.result;
@@ -760,7 +747,7 @@
         }
 
         outputPre.textContent = display;
-        setStatus("", "呼叫成功，顯示後端 / LLM 回傳結果。");
+        setStatus("", "分析完成！");
 
         // ⭐ 存起來給「儲存」用
         lastResultPayload = {
@@ -774,11 +761,10 @@
         saveBtn.disabled = false;
       } catch (err) {
         console.error(err);
-        setStatus("error", "呼叫後端 API 失敗：" + err.message);
+        setStatus("error", "處理失敗：" + err.message);
         outputPre.textContent =
-          "// 呼叫後端 API 或 LLM 失敗。\n" +
-          "// 請檢查 API_URL 是否正確、CORS 設定，以及後端 log。\n\n" +
-          String(err);
+          "處理過程中發生錯誤，請稍後再試。\n\n" +
+          "錯誤訊息：" + err.message;
       } finally {
         runBtn.disabled = false;
       }
@@ -798,7 +784,7 @@
 
       try {
         saveBtn.disabled = true;
-        setStatus("loading", "正在儲存這次的結果到後端 / DB…");
+        setStatus("loading", "正在儲存結果…");
 
         const res = await fetch(SAVE_API_URL, {
           method: "POST",
@@ -812,8 +798,7 @@
         }
 
         const data = await res.json();
-        const id = data.id || data.savedId || "";
-        setStatus("", "已成功儲存" + (id ? "（ID: " + id + "）" : "。"));
+        setStatus("", "已成功儲存！");
       } catch (err) {
         console.error(err);
         setStatus("error", "儲存失敗：" + err.message);
@@ -869,7 +854,7 @@
       renderChat();
 
       chatSendBtn.disabled = true;
-      setChatStatus("正在呼叫聊天 API…");
+      setChatStatus("正在處理中…");
 
       try {
         const res = await fetch(CHAT_API_URL, {
@@ -890,10 +875,10 @@
 
         chatHistory.push({ role: "assistant", content: reply });
         renderChat();
-        setChatStatus("已收到 AI 回覆");
+        setChatStatus("已收到回覆");
       } catch (err) {
         console.error(err);
-        setChatStatus("呼叫聊天 API 失敗：" + err.message);
+        setChatStatus("處理失敗：" + err.message);
       } finally {
         chatSendBtn.disabled = false;
       }

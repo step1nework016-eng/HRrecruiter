@@ -26,11 +26,11 @@ router.get('/', async (req: Request, res: Response) => {
       where.step = step;
     }
 
-    // 目前先查全部資料（未來可加上 userId 篩選）
-    // const userId = req.query.user_id as string || process.env.DEFAULT_USER_ID;
-    // if (userId) {
-    //   where.userId = userId;
-    // }
+    // 支援 userId 篩選（用於 session 追蹤）
+    const userId = req.query.user_id as string | undefined;
+    if (userId) {
+      where.userId = userId;
+    }
 
     console.log(`[HR Saved] 查詢條件: step=${step || 'all'}, limit=${limit}`);
 

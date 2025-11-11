@@ -797,9 +797,26 @@
           <div style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
             歡迎使用招募顧問 AI 智能體
           </div>
-          <div style="font-size: 14px; line-height: 1.6; max-width: 500px; margin: 0 auto;">
-            請點擊左側的功能開始使用：<br />
-            <strong>職缺需求</strong> → <strong>人才搜尋</strong> → <strong>初步篩選</strong> → <strong>面試階段</strong>
+          <div style="font-size: 14px; line-height: 1.8; max-width: 600px; margin: 0 auto; text-align: left;">
+            <div style="margin-bottom: 20px;">
+              <strong style="color: var(--text-main);">使用流程：</strong><br />
+              <strong>職缺需求</strong> → <strong>人才搜尋</strong> → <strong>初步篩選</strong> → <strong>面試階段</strong>
+            </div>
+            <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+              <strong style="color: #0ea5e9;">💡 記憶功能使用說明：</strong><br />
+              <div style="margin-top: 8px; font-size: 13px;">
+                1. 先使用四大功能生成結果（系統會自動儲存）<br />
+                2. 然後進入「AI 對話」，AI 會自動參考您之前生成的結果<br />
+                3. 這樣 AI 就能根據您的具體情況提供更精準的建議
+              </div>
+            </div>
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; font-size: 13px;">
+              <strong style="color: #d97706;">⚠️ 重要提醒：</strong><br />
+              <div style="margin-top: 8px;">
+                資料使用本地儲存（localStorage），<strong>關閉視窗或重新整理後資料會消失</strong>。<br />
+                目前暫時不使用登入機制，如需長期保存，請自行備份結果。
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -971,6 +988,19 @@
     // === API 路徑 ===
     const API_URL = "/api/hr-agent";    // 四個功能的生成用
     const CHAT_API_URL = "/api/hr-chat"; // 跟 AI 對話用
+    const SAVE_API_URL = "/api/hr-save"; // 儲存結果用
+    const SAVED_API_URL = "/api/hr-saved"; // 查詢已儲存結果用
+
+    // === Session ID 管理（使用 localStorage）===
+    function getSessionId() {
+      let sessionId = localStorage.getItem('hr_session_id');
+      if (!sessionId) {
+        // 生成新的 session ID（使用時間戳 + 隨機數）
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('hr_session_id', sessionId);
+      }
+      return sessionId;
+    }
 
     const steps = document.querySelectorAll(".step-item");
     const mainTitle = document.getElementById("main-title");
@@ -1148,6 +1178,29 @@
           input: text,
           result: displayText
         };
+
+        // 自動儲存到資料庫（使用 session ID）
+        try {
+          const saveRes = await fetch(SAVE_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              step: conf.stepKey,
+              input: text,
+              result: displayText,
+              user_id: getSessionId()
+            })
+          });
+          if (saveRes.ok) {
+            const saveData = await saveRes.json();
+            console.log(`[自動儲存] 已儲存結果，ID: ${saveData.id}`);
+          } else {
+            console.warn('[自動儲存] 儲存失敗，但不影響使用');
+          }
+        } catch (saveErr) {
+          console.warn('[自動儲存] 儲存錯誤:', saveErr);
+          // 儲存失敗不影響主要功能
+        }
 
         // 這時候才能再按「再換一個」和「複製」
         retryBtn.disabled = false;
@@ -1351,11 +1404,51 @@
       setChatStatus("AI 正在思考…");
 
       try {
+        // 查詢歷史結果作為上下文（只在第一次對話時加入，避免重複）
+        let contextMessages = [...chatHistory];
+        const isFirstMessage = chatHistory.length === 1; // 只有一條訊息（剛加入的用戶問題）
+        
+        if (isFirstMessage) {
+          try {
+            const savedRes = await fetch(`${SAVED_API_URL}?limit=10&user_id=${getSessionId()}`);
+            if (savedRes.ok) {
+              const savedData = await savedRes.json();
+              if (savedData.items && savedData.items.length > 0) {
+                // 將歷史結果作為上下文加入
+                const contextText = savedData.items.map((item, idx) => {
+                  const stepNames = {
+                    'job_intake': '職缺需求',
+                    'sourcing': '人才搜尋',
+                    'screening': '初步篩選',
+                    'interview': '面試階段'
+                  };
+                  const stepName = stepNames[item.step] || item.step;
+                  const resultPreview = typeof item.result === 'string' 
+                    ? item.result.substring(0, 500) 
+                    : JSON.stringify(item.result).substring(0, 500);
+                  return `【${stepName}】\n輸入：${item.input_preview}\n結果：${resultPreview}`;
+                }).join('\n\n');
+                
+                // 在對話開始前加入上下文訊息
+                contextMessages = [
+                  {
+                    role: "user",
+                    content: `以下是我之前使用四大功能產生的結果，請參考這些資訊來回答我的問題：\n\n${contextText}\n\n---\n\n現在我的問題是：${text}`
+                  }
+                ];
+              }
+            }
+          } catch (contextErr) {
+            console.warn('[上下文查詢] 查詢失敗，但不影響對話:', contextErr);
+            // 查詢失敗時使用原始對話歷史
+          }
+        }
+
         const res = await fetch(CHAT_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: chatHistory
+            messages: contextMessages
           })
         });
 

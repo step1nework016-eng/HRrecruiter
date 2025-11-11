@@ -1,40 +1,44 @@
-# 使用 Node.js 官方映像檔
+# -------- Builder：負責安裝 devDeps + build TS + Prisma --------
 FROM node:20-alpine AS builder
 
-# 設定工作目錄
+# 在 build 階段強制開發模式，確保 devDependencies（typescript、tsx 等）會被裝
+ENV NODE_ENV=development
+
 WORKDIR /app
 
-# 複製 package 檔案
+# 先複製 package 檔 & prisma
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 安裝依賴（使用 npm install 因為可能沒有 package-lock.json）
-RUN npm install
+# ⭐ 一定要把 dev 也裝進來，才會有 tsc
+RUN npm install --include=dev
 
-# 複製所有檔案
+# 再複製其他原始碼
 COPY . .
 
-# 產生 Prisma Client
+# 產生 Prisma Client（其實 build script 也會跑一次，重複沒關係）
 RUN npx prisma generate
 
-# 編譯 TypeScript
+# 編譯 TypeScript（package.json: "build": "prisma generate && tsc"）
 RUN npm run build
 
-# 生產環境映像檔
+
+# -------- Runtime：真正跑服務的容器，只帶 prod 依賴 --------
 FROM node:20-alpine
 
+ENV NODE_ENV=production
 WORKDIR /app
 
-# 複製必要的檔案
-COPY --from=builder /app/package*.json ./
+# 只裝 production 依賴
+COPY package*.json ./
+RUN npm install --omit=dev
+
+# 從 builder 拿 build 好的檔案
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
 
-# 暴露端口（Zeabur 會自動設定 PORT 環境變數）
+# Zeabur 會注入 PORT 環境變數，預設你程式聽 3000 即可
 EXPOSE 3000
 
-# 啟動應用程式
 CMD ["npm", "start"]
-

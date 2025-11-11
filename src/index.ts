@@ -31,11 +31,33 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 測試路由：確認路由系統正常運作
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'API 路由系統正常運作',
+    timestamp: new Date().toISOString(),
+    routes: [
+      'POST /api/hr-agent',
+      'POST /api/hr-chat',
+      'POST /api/hr-save',
+      'GET /api/hr-saved'
+    ]
+  });
+});
+
 // API 路由（必須在靜態檔案之前）
 app.use('/api/hr-agent', hrAgentRouter);
 app.use('/api/hr-chat', hrChatRouter);
 app.use('/api/hr-save', hrSaveRouter);
 app.use('/api/hr-saved', hrSavedRouter);
+
+// 調試：確認路由已載入
+console.log('✅ API 路由已註冊:');
+console.log('   POST /api/hr-agent');
+console.log('   POST /api/hr-chat');
+console.log('   POST /api/hr-save');
+console.log('   GET  /api/hr-saved');
 
 // 提供靜態檔案（前端）
 // 在編譯後，__dirname 會是 dist/，所以 public 在 ../public
@@ -65,9 +87,10 @@ app.use(
   },
 );
 
-// 404 處理（API 路由）
+// 404 處理（API 路由）- 必須在所有路由之後
 app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: '找不到指定的 API 路由' });
+  console.warn(`⚠️  404: 找不到 API 路由: ${req.method} ${req.path}`);
+  res.status(404).json({ error: '找不到指定的 API 路由', path: req.path, method: req.method });
 });
 
 // 啟動伺服器（監聽 0.0.0.0 以支援容器部署）

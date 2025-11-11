@@ -15,6 +15,7 @@ interface HrAgentRequest {
  * 四個功能的 LLM 產生 API
  */
 router.post('/', async (req: Request, res: Response) => {
+  console.log(`[HR Agent] 收到請求: ${req.method} ${req.path}`);
   try {
     const { step, input, mode = 'normal' }: HrAgentRequest = req.body;
 

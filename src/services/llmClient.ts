@@ -18,9 +18,9 @@ export async function generateText(
   temperature: number = 0.7
 ): Promise<string> {
   try {
-    // 使用 Gemini 1.5 Flash 模型（支援免費層）
+    // 使用 Gemini Pro 模型（最穩定的免費模型）
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-pro',
       generationConfig: {
         temperature,
         topP: 0.95,
@@ -58,9 +58,9 @@ export async function generateChat(
   systemPrompt?: string
 ): Promise<string> {
   try {
-    // 使用 Gemini 1.5 Flash 模型（支援免費層）
+    // 使用 Gemini Pro 模型（最穩定的免費模型）
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-pro',
       generationConfig: {
         temperature: 0.7,
         topP: 0.95,

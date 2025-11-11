@@ -51,8 +51,13 @@ router.post('/', async (req: Request, res: Response) => {
     res.json({ result });
   } catch (error) {
     console.error('[HR Agent] 錯誤:', error);
+    if (error instanceof Error) {
+      console.error('[HR Agent] 錯誤訊息:', error.message);
+      console.error('[HR Agent] 錯誤堆疊:', error.stack);
+    }
     res.status(500).json({
       error: error instanceof Error ? error.message : 'LLM 呼叫失敗',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined,
     });
   }
 });

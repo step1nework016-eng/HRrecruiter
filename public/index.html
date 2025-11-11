@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>招募顧問 AI 智能體（RWD＋工具彈窗＋聊天＋儲存）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card: #ffffff;
+      --accent: #0ea5e9;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-soft: #6b7280;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .app-shell {
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+        padding-bottom: 16px;
+      }
+      body {
+        padding: 16px;
+      }
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      padding: 20px;
+    }
+    /* 側邊欄 */
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .logo-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .title-main {
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .title-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+    .step-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step-item {
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: 0.18s;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-item:hover {
+      background: #f9fafb;
+    }
+    .step-item.active {
+      border-color: var(--accent);
+      background: #f0f9ff;
+      color: var(--accent);
+    }
+    .step-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+    .step-item.active .step-badge {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .sidebar-footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed #e5e7eb;
+      font-size: 11px;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 4px 8px;
+      margin-top: 6px;
+      font-size: 10px;
+      background: #f9fafb;
+    }
+
+    /* 主畫面共用（桌機+手機） */
+    .main-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .main-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .main-subtitle {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+    .badge-ai {
+      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f9fafb;
+      white-space: nowrap;
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+    .main-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    /* 工具區：桌機版為內嵌，手機版為全螢幕彈窗 */
+    .tool-modal {
+      margin-bottom: 12px;
+    }
+    .tool-close-btn {
+      display: none;
+    }
+
+    .panel {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1.15fr 1.35fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .panel {
+        grid-template-columns: 1fr;
+      }
+      .tool-modal {
+        position: fixed;
+        inset: 0;
+        padding: 16px;
+        background: #f3f4f6;
+        z-index: 50;
+        overflow-y: auto;
+        display: none;
+      }
+      .tool-modal.open {
+        display: block;
+      }
+      .badge-ai {
+        display: none;
+      }
+      .tool-close-btn {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: #ffffff;
+        cursor: pointer;
+        align-items: center;
+        gap: 4px;
+      }
+      .tool-inner-card {
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid #e5e7eb;
+        box-shadow: var(--shadow-soft);
+        padding: 16px;
+      }
+    }
+    @media (min-width: 901px) {
+      .tool-inner-card {
+        padding: 0;
+      }
+    }
+
+    .panel h4 {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 190px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.4);
+    }
+    pre {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow: auto;
+      max-height: 320px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .toolbar {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 8px 18px rgba(14, 165, 233, 0.35);
+    }
+    .btn-primary:hover {
+      background: #0284c7;
+    }
+    .btn-primary[disabled] {
+      opacity: 0.7;
+      cursor: default;
+      box-shadow: none;
+    }
+    .status {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-top: 6px;
+    }
+    .status .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      margin-right: 4px;
+      background: #9ca3af;
+    }
+    .status.loading .dot {
+      background: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+    }
+    .status.error .dot {
+      background: #ef4444;
+      box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.18);
+    }
+    .chip-row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 10px;
+    }
+    .chip {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      color: var(--text-soft);
+    }
+
+    /* Chat 區塊：關掉工具後手機只會看到這個 */
+    .chat-card {
+      margin-top: 10px;
+    }
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .chat-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .chat-subtitle {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+    .chat-window {
+      border-radius: var(--radius-lg);
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 10px;
+      max-height: 260px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    .chat-empty {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+    .chat-msg {
+      margin-bottom: 8px;
+      display: flex;
+      gap: 8px;
+    }
+    .chat-msg.me {
+      justify-content: flex-end;
+    }
+    .chat-bubble {
+      max-width: 80%;
+      padding: 8px 10px;
+      border-radius: 14px;
+      line-height: 1.5;
+    }
+    .chat-msg.me .chat-bubble {
+      background: #0ea5e9;
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+    .chat-msg.ai .chat-bubble {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-bottom-left-radius: 2px;
+    }
+    .chat-role {
+      font-size: 10px;
+      color: var(--text-soft);
+      margin-bottom: 2px;
+    }
+    .chat-input-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 13px;
+      outline: none;
+      background: #ffffff;
+    }
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.3);
+    }
+    .btn-chat {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      background: #0ea5e9;
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-chat[disabled] {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .chat-status {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 側邊欄 -->
+    <aside class="card">
+      <div class="sidebar-header">
+        <div class="logo-circle">HR</div>
+        <div>
+          <div class="title-main">招募顧問 AI 智能體</div>
+          <div class="title-sub">Job Intake → Sourcing → Screening → Interview</div>
+        </div>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item active" data-step="1">
+          <div class="step-badge">1</div>
+          <div>職缺需求（Job Intake）</div>
+        </div>
+        <div class="step-item" data-step="2">
+          <div class="step-badge">2</div>
+          <div>人才搜尋（Sourcing）</div>
+        </div>
+        <div class="step-item" data-step="3">
+          <div class="step-badge">3</div>
+          <div>初步篩選（Screening）</div>
+        </div>
+        <div class="step-item" data-step="4">
+          <div class="step-badge">4</div>
+          <div>面試階段（Interview）</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        手機版：點上面的功能，<br />
+        會打開全螢幕生成頁，按「✕」後關閉，<br />
+        只留下下面的 AI 對話框。
+        <div class="pill">
+          🔌 Frontend → Backend → LLM
+        </div>
+      </div>
+    </aside>
+
+    <!-- 右側主畫面：工具（桌機）＋聊天 -->
+    <main class="card">
+      <!-- 工具區：桌機=內嵌，手機=彈窗 -->
+      <section id="tool-modal" class="tool-modal open">
+        <div class="tool-inner-card">
+          <div class="main-header">
+            <div class="main-title-wrap">
+              <div class="main-title" id="main-title">① 職缺需求（Job Intake）</div>
+              <div class="main-subtitle" id="main-subtitle">
+                HR 貼上職缺說明（JD） → 後端呼叫 LLM 生成人才畫像與結構化欄位
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="badge-ai">
+                <div class="badge-dot"></div>
+                LLM Agent Connected
+              </div>
+              <button class="tool-close-btn" id="tool-close-btn">✕ 關閉</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <!-- 左：輸入 -->
+            <div>
+              <h4>輸入（HR 貼上內容）</h4>
+              <p class="hint" id="input-hint">
+                目前步驟：職缺需求（Job Intake）。請貼上完整 JD。
+              </p>
+              <textarea id="input-text" spellcheck="false">職缺：短影音剪輯師
+
+我們是一間專門做 AI、短影音教學的公司，正在找一位全職短影音剪輯師，負責 TikTok、Reels、YouTube Shorts 的剪輯。
+需要熟悉剪映或 Premiere，會做字幕、音樂節奏、轉場，懂一點社群感的節奏，知道什麼畫面容易吸引觀眾滑停。
+需具備 1–3 年剪輯經驗，有作品集，能配合 remote 團隊溝通。
+加分：有拍攝經驗、懂腳本節奏、會基本的縮圖設計。</textarea>
+
+              <div class="toolbar">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="btn-primary" id="run-btn">
+                    ⚡ 送出給後端 & LLM 分析
+                  </button>
+                  <button class="btn-primary" id="retry-btn" disabled
+                    style="background:#e5e7eb;color:#374151;box-shadow:none;">
+                    🔁 再換一個
+                  </button>
+                  <button class="btn-primary" id="save-btn" disabled
+                    style="background:#22c55e;box-shadow:none;">
+                    💾 儲存
+                  </button>
+                </div>
+                <div>
+                  <span style="font-size:11px;color:var(--text-soft);">
+                    會 POST 到 <code>/api/hr-agent</code>，儲存則呼叫 <code>/api/hr-save</code>
+                  </span>
+                </div>
+              </div>
+              <div class="status" id="status">
+                <span class="dot"></span> 等待送出…
+              </div>
+            </div>
+
+            <!-- 右：輸出 -->
+            <div>
+              <h4>AI 回傳結果（由後端轉給前端）</h4>
+              <p class="hint">
+                顯示後端回傳的 <code>result</code> 欄位內容（字串或 JSON 都可）。
+              </p>
+              <pre id="output-pre">// 點「送出給後端 & LLM 分析」後會顯示結果</pre>
+            </div>
+          </div>
+
+          <div class="chip-row">
+            <div class="chip">步驟以 <code>step</code> 傳給後端：job_intake / sourcing / screening / interview</div>
+            <div class="chip">後端負責選 Prompt、串 LLM、整理 JSON</div>
+            <div class="chip">儲存 API 會收到：<code>{ step, input, result }</code></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chat 區塊：手機關掉工具後，只剩這個畫面 -->
+      <div class="chat-card">
+        <div class="chat-header">
+          <div>
+            <div class="chat-title">💬 跟 AI 對話（HR 顧問模式）</div>
+            <div class="chat-subtitle">可以問招募策略、JD 調整建議、面試問題設計等。</div>
+          </div>
+        </div>
+
+        <div class="chat-window" id="chat-window">
+          <div class="chat-empty">
+            還沒有對話紀錄，可以試試問：<br />
+            「幫我優化這個剪輯師 JD 的標題」或「我現在這個人才畫像合理嗎？」。
+          </div>
+        </div>
+
+        <div class="chat-input-row">
+          <input
+            type="text"
+            class="chat-input"
+            id="chat-input"
+            placeholder="輸入想問 AI 的問題，例如：幫我調整這個職缺的亮點敘述..."
+          />
+          <button class="btn-chat" id="chat-send-btn">
+            ➤ 送出
+          </button>
+        </div>
+        <div class="chat-status" id="chat-status">狀態：待機中</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // === 把這三個改成你實際的後端路徑 ===
+    const API_URL = "/api/hr-agent";    // 四個功能的生成用
+    const CHAT_API_URL = "/api/hr-chat"; // 跟 AI 對話用
+    const SAVE_API_URL = "/api/hr-save"; // 儲存履歷分析 / 面談問題等用
+
+    const steps = document.querySelectorAll(".step-item");
+    const mainTitle = document.getElementById("main-title");
+    const mainSubtitle = document.getElementById("main-subtitle");
+    const inputHint = document.getElementById("input-hint");
+    const inputText = document.getElementById("input-text");
+    const outputPre = document.getElementById("output-pre");
+    const runBtn = document.getElementById("run-btn");
+    const retryBtn = document.getElementById("retry-btn");
+    const saveBtn = document.getElementById("save-btn");
+    const statusEl = document.getElementById("status");
+    const toolModal = document.getElementById("tool-modal");
+    const toolCloseBtn = document.getElementById("tool-close-btn");
+
+    // Chat 元件
+    const chatWindow = document.getElementById("chat-window");
+    const chatInput = document.getElementById("chat-input");
+    const chatSendBtn = document.getElementById("chat-send-btn");
+    const chatStatus = document.getElementById("chat-status");
+
+    // 四階段設定
+    const STEP_CONFIG = {
+      "1": {
+        title: "① 職缺需求（Job Intake）",
+        subtitle: "HR 貼上職缺說明（JD） → 後端呼叫 LLM 生成人才畫像與結構化欄位",
+        hint: "目前步驟：職缺需求（Job Intake）。請貼上完整 JD。",
+        stepKey: "job_intake"
+      },
+      "2": {
+        title: "② 人才搜尋（Sourcing）",
+        subtitle: "根據職缺資訊，產出招募貼文、搜尋關鍵字與邀請訊息",
+        hint: "目前步驟：人才搜尋（Sourcing）。可貼上職缺摘要，讓 AI 幫你生招募貼文與關鍵字。",
+        stepKey: "sourcing"
+      },
+      "3": {
+        title: "③ 初步篩選（Screening）",
+        subtitle: "輸入 JD＋履歷 → LLM 評估匹配度、優勢、風險與建議提問",
+        hint: "目前步驟：初步篩選（Screening）。建議格式：先貼 JD，再貼履歷，中間用 --- 分隔。",
+        stepKey: "screening"
+      },
+      "4": {
+        title: "④ 面試階段（Interview）",
+        subtitle: "貼上面試逐字稿 → LLM 產出摘要、優勢/疑慮與分數評估",
+        hint: "目前步驟：面試階段（Interview）。請貼上面試逐字稿（已轉文字）。",
+        stepKey: "interview"
+      }
+    };
+
+    let currentStep = "1";
+    let lastResultPayload = null; // 用來存這次 LLM 的結果，給「儲存」用
+
+    function setStatus(mode, text) {
+      statusEl.className = "status " + (mode || "");
+      statusEl.innerHTML = '<span class="dot"></span>' + (text || "");
+    }
+
+    function isMobile() {
+      return window.innerWidth <= 900;
+    }
+
+    function openToolModal() {
+      if (isMobile()) {
+        toolModal.classList.add("open");
+      }
+    }
+
+    function closeToolModal() {
+      if (isMobile()) {
+        toolModal.classList.remove("open");
+      }
+    }
+
+    // 切換四階段 UI
+    steps.forEach((s) => {
+      s.addEventListener("click", () => {
+        steps.forEach((x) => x.classList.remove("active"));
+        s.classList.add("active");
+        const key = s.dataset.step;
+        currentStep = key;
+
+        const conf = STEP_CONFIG[key];
+        mainTitle.textContent = conf.title;
+        mainSubtitle.textContent = conf.subtitle;
+        inputHint.textContent = conf.hint;
+
+        outputPre.textContent =
+          "// 已切換到：" +
+          conf.title +
+          "。\n// 貼上內容後，點下方按鈕送出給後端 & LLM。";
+        setStatus("", "已切換步驟，等待送出…");
+
+        // 切換步驟後，清掉上一筆暫存結果
+        lastResultPayload = null;
+        retryBtn.disabled = true;
+        saveBtn.disabled = true;
+
+        // 手機版：點功能就打開工具彈窗
+        openToolModal();
+      });
+    });
+
+    // 關閉工具彈窗（只影響手機）
+    toolCloseBtn.addEventListener("click", () => {
+      closeToolModal();
+    });
+
+    // 呼叫 hr-agent 的共用 function
+    async function callHrAgent(isRetry = false) {
+      const text = inputText.value.trim();
+      if (!text) {
+        setStatus("error", "請先在左側貼上內容，再送出給後端。");
+        return;
+      }
+
+      const conf = STEP_CONFIG[currentStep];
+
+      runBtn.disabled = true;
+      retryBtn.disabled = true;
+      saveBtn.disabled = true;
+
+      const actionText = isRetry ? "（再換一個）" : "";
+      setStatus(
+        "loading",
+        "正在呼叫後端 API：" + API_URL + "，step=" + conf.stepKey + " " + actionText
+      );
+      outputPre.textContent = "// 請稍候，後端正在呼叫 LLM…";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            step: conf.stepKey,
+            input: text,
+            mode: isRetry ? "retry" : "normal"
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error("HTTP 狀態碼 " + res.status);
+        }
+
+        const data = await res.json();
+
+        let resultObject;
+        let display;
+
+        if (data == null) {
+          display = "// 後端回傳空內容。";
+          resultObject = null;
+        } else if (typeof data.result === "string") {
+          display = data.result;
+          resultObject = data.result;
+        } else if (data.result) {
+          display = JSON.stringify(data.result, null, 2);
+          resultObject = data.result;
+        } else {
+          display = JSON.stringify(data, null, 2);
+          resultObject = data;
+        }
+
+        outputPre.textContent = display;
+        setStatus("", "呼叫成功，顯示後端 / LLM 回傳結果。");
+
+        // ⭐ 存起來給「儲存」用
+        lastResultPayload = {
+          step: conf.stepKey,
+          input: text,
+          result: resultObject
+        };
+
+        // 這時候才能再按「再換一個」和「儲存」
+        retryBtn.disabled = false;
+        saveBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        setStatus("error", "呼叫後端 API 失敗：" + err.message);
+        outputPre.textContent =
+          "// 呼叫後端 API 或 LLM 失敗。\n" +
+          "// 請檢查 API_URL 是否正確、CORS 設定，以及後端 log。\n\n" +
+          String(err);
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    // ⚡送出
+    runBtn.addEventListener("click", () => callHrAgent(false));
+    // 🔁 再換一個（同樣 step & input 再叫一次）
+    retryBtn.addEventListener("click", () => callHrAgent(true));
+
+    // 💾 儲存目前結果
+    saveBtn.addEventListener("click", async () => {
+      if (!lastResultPayload) {
+        setStatus("error", "目前沒有可以儲存的結果，請先讓 AI 生成一次。");
+        return;
+      }
+
+      try {
+        saveBtn.disabled = true;
+        setStatus("loading", "正在儲存這次的結果到後端 / DB…");
+
+        const res = await fetch(SAVE_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lastResultPayload)
+          // 之後你要加 userId / conversationId 也可以在這裡一起傳
+        });
+
+        if (!res.ok) {
+          throw new Error("HTTP 狀態碼 " + res.status);
+        }
+
+        const data = await res.json();
+        const id = data.id || data.savedId || "";
+        setStatus("", "已成功儲存" + (id ? "（ID: " + id + "）" : "。"));
+      } catch (err) {
+        console.error(err);
+        setStatus("error", "儲存失敗：" + err.message);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    // === Chat 功能 ===
+    let chatHistory = []; // { role: 'user' | 'assistant', content: string }
+
+    function renderChat() {
+      if (!chatHistory.length) {
+        chatWindow.innerHTML =
+          '<div class="chat-empty">還沒有對話紀錄，可以試試問：<br />「幫我優化這個剪輯師 JD 的標題」或「我現在這個人才畫像合理嗎？」。</div>';
+        return;
+      }
+
+      chatWindow.innerHTML = "";
+      chatHistory.forEach((msg) => {
+        const row = document.createElement("div");
+        row.className = "chat-msg " + (msg.role === "user" ? "me" : "ai");
+
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+
+        const roleLabel = document.createElement("div");
+        roleLabel.className = "chat-role";
+        roleLabel.textContent = msg.role === "user" ? "你：" : "AI：";
+
+        const content = document.createElement("div");
+        content.textContent = msg.content;
+
+        bubble.appendChild(roleLabel);
+        bubble.appendChild(content);
+        row.appendChild(bubble);
+        chatWindow.appendChild(row);
+      });
+
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function setChatStatus(text) {
+      chatStatus.textContent = "狀態：" + text;
+    }
+
+    async function sendChat() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      chatHistory.push({ role: "user", content: text });
+      chatInput.value = "";
+      renderChat();
+
+      chatSendBtn.disabled = true;
+      setChatStatus("正在呼叫聊天 API…");
+
+      try {
+        const res = await fetch(CHAT_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: chatHistory
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error("HTTP 狀態碼 " + res.status);
+        }
+
+        const data = await res.json();
+        const reply =
+          data.reply || data.result || data.message || JSON.stringify(data);
+
+        chatHistory.push({ role: "assistant", content: reply });
+        renderChat();
+        setChatStatus("已收到 AI 回覆");
+      } catch (err) {
+        console.error(err);
+        setChatStatus("呼叫聊天 API 失敗：" + err.message);
+      } finally {
+        chatSendBtn.disabled = false;
+      }
+    }
+
+    chatSendBtn.addEventListener("click", sendChat);
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    // 初始化 chat 畫面
+    renderChat();
+  </script>
+</body>
+</html>

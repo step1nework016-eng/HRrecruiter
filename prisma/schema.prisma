@@ -1,0 +1,23 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model HrSavedArtifact {
+  id         String   @id @default(uuid())
+  userId     String   @default("default_user")
+  step       String   // 'job_intake' / 'sourcing' / 'screening' / 'interview'
+  inputText  String   @db.Text
+  resultJson Json     // LLM 回傳的結果（JSON 或包裝後的字串）
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("hr_saved_artifacts")
+}
+

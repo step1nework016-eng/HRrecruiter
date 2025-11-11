@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>招募顧問 AI 智能體 </title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     :root {
       --bg: #ffffff;
@@ -36,6 +36,14 @@
       padding: 32px 16px;
       display: flex;
       justify-content: center;
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
+    }
+    html {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
     }
     .app-shell {
       width: 100%;
@@ -48,9 +56,18 @@
       .app-shell {
         grid-template-columns: 1fr;
         padding-bottom: 16px;
+        width: 100%;
+        overflow-x: hidden;
       }
       body {
         padding: 16px;
+        overflow-x: hidden;
+        position: relative;
+        touch-action: pan-y;
+      }
+      html {
+        overflow-x: hidden;
+        touch-action: pan-y;
       }
     }
     .card {
@@ -533,6 +550,11 @@
       background: var(--bg);
       z-index: 100;
       flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      transform: none;
+      zoom: 1;
     }
     .fullscreen-chat.active {
       display: flex;
@@ -562,12 +584,16 @@
       display: flex;
       flex-direction: column;
       background: var(--bg);
+      overflow-x: hidden;
+      width: 100%;
     }
     .fullscreen-chat-window {
       flex: 1;
       padding: 24px;
       overflow-y: auto;
+      overflow-x: hidden;
       background: var(--bg);
+      width: 100%;
     }
     .fullscreen-chat-input-area {
       padding: 20px 24px;
@@ -623,9 +649,17 @@
       background: var(--bg);
     }
     @media (max-width: 900px) {
+      .fullscreen-chat {
+        width: 100vw;
+        height: 100vh;
+        overflow-x: hidden;
+        touch-action: pan-y;
+      }
       .fullscreen-chat-body {
         grid-template-columns: 1fr;
         position: relative;
+        overflow-x: hidden;
+        width: 100%;
       }
       .fullscreen-chat-sidebar {
         position: fixed;
@@ -1202,7 +1236,8 @@
           displayText = JSON.stringify(data, null, 2);
         }
 
-        outputPre.textContent = displayText;
+        // 使用 innerHTML 並轉換 markdown 格式（移除 ** 和 * 符號，轉為 HTML）
+        outputPre.innerHTML = markdownToNaturalLanguage(displayText);
         setStatus("", "分析完成！");
 
         // ⭐ 存起來給「複製」用

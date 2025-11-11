@@ -2,9 +2,27 @@
 
 這是「招募顧問 AI 智能體」專案，採用 **Monorepo** 架構，前後端放在同一個專案中。
 
-- **前端**: HTML + JavaScript (RWD)
+- **前端**: HTML + JavaScript (RWD，支援手機版)
 - **後端**: Node.js + Express + TypeScript + Prisma + PostgreSQL
-- **LLM**: Google Gemini API
+- **LLM**: Google Gemini API (支援自動重試和備用模型)
+
+## 主要功能
+
+1. **四大 AI 功能**：
+   - 職缺需求（Job Intake）：分析 JD 並生成人才畫像
+   - 人才搜尋（Sourcing）：產出招募貼文與搜尋關鍵字
+   - 初步篩選（Screening）：評估履歷匹配度
+   - 面試階段（Interview）：分析面試逐字稿
+
+2. **AI 對話功能**：
+   - 全屏 AI 對話介面
+   - 自動參考歷史生成結果
+   - 支援多輪對話
+
+3. **自動儲存與記憶**：
+   - 四大功能結果自動儲存到資料庫
+   - AI 對話時自動讀取歷史結果作為上下文
+   - 使用 localStorage 管理 session（無需登入）
 
 ## 技術棧
 
@@ -120,7 +138,7 @@ npm start
 
 ### 1. POST /api/hr-agent
 
-四個功能的 LLM 產生 API。
+四個功能的 LLM 產生 API。**自動處理 503 錯誤重試**（最多 3 次，遞增延遲）。
 
 **Request Body:**
 ```json
@@ -134,13 +152,19 @@ npm start
 **Response:**
 ```json
 {
-  "result": { ... }  // JSON 物件或字串
+  "result": "自然語言格式的結果（已轉換 markdown 為 HTML）"
 }
 ```
 
+**錯誤處理：**
+- 503 服務過載：自動重試 3 次（延遲 2秒、4秒、6秒）
+- 404 模型不存在：自動切換備用模型（gemini-2.0-flash-lite, gemini-2.5-flash-lite）
+- 429 配額用盡：返回錯誤訊息
+- 結果會自動儲存到資料庫（使用 session ID）
+
 ### 2. POST /api/hr-chat
 
-與 AI 自由對話。
+與 AI 自由對話。**自動處理 503 錯誤重試**（最多 3 次，遞增延遲）。
 
 **Request Body:**
 ```json
@@ -155,20 +179,31 @@ npm start
 **Response:**
 ```json
 {
-  "reply": "AI 回覆內容"
+  "reply": "AI 回覆內容（已轉換 markdown 為 HTML）"
 }
 ```
 
+**記憶功能：**
+- 第一次對話時，會自動查詢用戶之前使用四大功能的結果
+- 將歷史結果作為上下文傳給 LLM，提供更精準的建議
+- 使用 session ID（localStorage）追蹤用戶資料
+
+**錯誤處理：**
+- 503 服務過載：自動重試 3 次（延遲 2秒、4秒、6秒）
+- 404 模型不存在：自動切換備用模型
+- 429 配額用盡：返回錯誤訊息
+
 ### 3. POST /api/hr-save
 
-儲存本次分析 / 產出結果。
+儲存本次分析 / 產出結果（**前端會自動調用，無需手動儲存**）。
 
 **Request Body:**
 ```json
 {
   "step": "screening",
   "input": "原始輸入文字",
-  "result": { ... }  // LLM 的回應內容
+  "result": "LLM 的回應內容",
+  "user_id": "session_id"  // 可選，前端會自動帶入
 }
 ```
 
@@ -179,13 +214,16 @@ npm start
 }
 ```
 
+**注意：** 四大功能生成結果後會自動調用此 API 儲存，無需手動操作。
+
 ### 4. GET /api/hr-saved
 
-查詢已儲存紀錄。
+查詢已儲存紀錄（**AI 對話時會自動調用，用於記憶功能**）。
 
 **Query Parameters:**
 - `step` (可選): 篩選特定步驟
 - `limit` (可選): 限制筆數（預設 20）
+- `user_id` (可選): 使用者 session ID（前端會自動帶入）
 
 **Response:**
 ```json
@@ -196,11 +234,13 @@ npm start
       "step": "screening",
       "input_preview": "前100字...",
       "created_at": "2024-01-01T00:00:00.000Z",
-      "result": { ... }
+      "result": "完整結果內容"
     }
   ]
 }
 ```
+
+**注意：** AI 對話時會自動查詢此 API，將歷史結果作為上下文。
 
 ## 資料庫 Schema
 
@@ -227,12 +267,53 @@ npm run db:studio
 
 會在 `http://localhost:5555` 開啟。
 
+## 使用流程
+
+### 基本使用
+
+1. **使用四大功能**：
+   - 點擊左側功能（職缺需求、人才搜尋、初步篩選、面試階段）
+   - 貼上對應內容
+   - 點擊「開始 AI 分析」
+   - 結果會自動儲存到資料庫
+
+2. **使用 AI 對話**：
+   - 點擊「💬 進入 AI 對話」按鈕
+   - 輸入問題
+   - AI 會自動參考您之前生成的結果，提供更精準的建議
+
+### 記憶功能說明
+
+- **自動儲存**：四大功能生成結果後會自動儲存到資料庫
+- **自動讀取**：AI 對話時會自動查詢歷史結果作為上下文
+- **Session 管理**：使用 localStorage 生成 session ID，無需登入
+- **資料持久化**：資料儲存在 PostgreSQL，但 session ID 使用 localStorage（關閉視窗或重新整理後會生成新的 session ID）
+
+## 錯誤處理機制
+
+### 503 服務過載錯誤
+
+所有 API 都內建自動重試機制：
+- **重試次數**：最多 3 次
+- **重試延遲**：遞增延遲（2秒 → 4秒 → 6秒）
+- **備用模型**：重試失敗後自動切換備用模型
+  - `gemini-2.0-flash-lite`
+  - `gemini-2.5-flash-lite`
+
+### 其他錯誤
+
+- **404 模型不存在**：自動切換備用模型
+- **429 配額用盡**：返回明確錯誤訊息
+- **其他錯誤**：記錄詳細日誌並返回錯誤訊息
+
 ## 注意事項
 
 1. **CORS 設定**: 目前設定為允許所有來源（`origin: '*'`），生產環境請改為特定網域。
 2. **API Key 安全**: 請勿將 `.env` 檔案提交到版本控制系統。
 3. **資料庫連線**: 確保 PostgreSQL 服務正在運行，且連線字串正確。
 4. **Gemini API**: 請確認 API Key 有效且有足夠的配額。
+5. **Session 管理**: 目前使用 localStorage 管理 session，關閉視窗或重新整理後會生成新的 session ID，之前的資料仍會保留在資料庫中。
+6. **Markdown 轉換**: 所有 AI 回傳結果會自動將 markdown 格式（`**粗體**`、`*斜體*`）轉換為 HTML 顯示。
 
 ## 故障排除
 
@@ -247,6 +328,9 @@ npm run db:studio
 - 確認 `GEMINI_API_KEY` 已正確設定
 - 檢查 API Key 是否有效
 - 查看控制台錯誤訊息
+- **503 錯誤**：系統會自動重試，無需手動處理
+- **429 配額錯誤**：檢查 Google AI Studio 配額設定
+- **404 模型錯誤**：系統會自動切換備用模型
 
 ### TypeScript 編譯錯誤
 

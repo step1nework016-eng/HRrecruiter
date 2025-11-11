@@ -34,7 +34,9 @@ app.use('/api/hr-save', hrSaveRouter);
 app.use('/api/hr-saved', hrSavedRouter);
 
 // 提供靜態檔案（前端）
+// 在編譯後，__dirname 會是 dist/，所以 public 在 ../public
 const publicPath = path.join(__dirname, '../public');
+console.log(`📁 靜態檔案路徑: ${publicPath}`);
 app.use(express.static(publicPath));
 
 // SPA 路由：所有非 API 路由都回傳 index.html（必須在錯誤處理之前）
@@ -57,9 +59,9 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: '找不到指定的 API 路由' });
 });
 
-// 啟動伺服器
-app.listen(PORT, () => {
-  console.log(`🚀 伺服器已啟動在 http://localhost:${PORT}`);
+// 啟動伺服器（監聽 0.0.0.0 以支援容器部署）
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 伺服器已啟動在 http://0.0.0.0:${PORT}`);
   console.log(`📝 API 端點:`);
   console.log(`   POST /api/hr-agent - 四個功能的 LLM 產生`);
   console.log(`   POST /api/hr-chat - 與 AI 對話`);

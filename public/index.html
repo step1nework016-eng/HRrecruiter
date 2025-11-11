@@ -183,9 +183,24 @@
     /* 工具區：桌機版為內嵌，手機版為全螢幕彈窗 */
     .tool-modal {
       margin-bottom: 12px;
+      display: none;
+    }
+    .tool-modal.open {
+      display: block;
+    }
+    .home-welcome {
+      display: block;
     }
     .tool-close-btn {
-      display: none;
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #ffffff;
+      cursor: pointer;
+      align-items: center;
+      gap: 4px;
     }
 
     .panel {
@@ -440,10 +455,299 @@
       font-size: 11px;
       color: var(--text-soft);
     }
+    .thinking {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .thinking-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: thinking 1.4s infinite;
+    }
+    .thinking-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .thinking-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes thinking {
+      0%, 60%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+      30% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .chat-content {
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .chat-content strong {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    /* 全屏對話頁面 */
+    .fullscreen-chat {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      flex-direction: column;
+    }
+    .fullscreen-chat.active {
+      display: flex;
+    }
+    .fullscreen-chat-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+    }
+    .fullscreen-chat-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+    .fullscreen-chat-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      background: var(--card);
+      overflow-y: auto;
+    }
+    .fullscreen-chat-main {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    .fullscreen-chat-window {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+    .fullscreen-chat-input-area {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+    }
+    .btn-enter-chat {
+      margin-top: 12px;
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-enter-chat:hover {
+      background: #0284c7;
+    }
+    .btn-close-fullscreen {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-soft);
+    }
+    .btn-close-fullscreen:hover {
+      background: #f9fafb;
+      color: var(--text-main);
+    }
+    .mobile-nav-toggle {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 16px;
+      cursor: pointer;
+      min-width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+    }
+    .mobile-nav-toggle:hover {
+      background: var(--bg);
+    }
+    @media (max-width: 900px) {
+      .fullscreen-chat-body {
+        grid-template-columns: 1fr;
+        position: relative;
+      }
+      .fullscreen-chat-sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 101;
+        transition: left 0.3s;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+      }
+      .fullscreen-chat-sidebar.open {
+        left: 0;
+      }
+      .mobile-nav-toggle {
+        display: flex;
+      }
+      .fullscreen-chat-header {
+        padding: 12px 16px;
+      }
+      .fullscreen-chat-window {
+        padding: 16px;
+      }
+      .fullscreen-chat-input-area {
+        padding: 12px 16px;
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 100;
+      }
+      .sidebar-overlay.open {
+        display: block;
+      }
+    }
+    /* 歡迎動畫頁面 */
+    .welcome-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #2563eb 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 1;
+      transition: opacity 0.8s ease-out;
+    }
+    .welcome-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .welcome-logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 32px;
+      animation: logoScale 1.2s ease-out;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    @keyframes logoScale {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    .welcome-text {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 16px;
+      animation: textFadeIn 1s ease-out 0.5s both;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .welcome-subtitle {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      animation: textFadeIn 1s ease-out 1s both;
+    }
+    @keyframes textFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .welcome-dots {
+      display: flex;
+      gap: 8px;
+      margin-top: 40px;
+      animation: textFadeIn 1s ease-out 1.5s both;
+    }
+    .welcome-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      animation: dotPulse 1.4s ease-in-out infinite;
+    }
+    .welcome-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .welcome-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes dotPulse {
+      0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="app-shell">
+  <!-- 歡迎動畫頁面 -->
+  <div class="welcome-screen" id="welcome-screen">
+    <div class="welcome-logo">HR</div>
+    <div class="welcome-text">
+      歡迎使用<br />招募顧問 AI 智能體
+    </div>
+    <div class="welcome-subtitle">AI-Powered Recruitment Consultant</div>
+    <div class="welcome-dots">
+      <div class="welcome-dot"></div>
+      <div class="welcome-dot"></div>
+      <div class="welcome-dot"></div>
+    </div>
+  </div>
+
+  <div class="app-shell" id="app-shell" style="opacity: 0; transition: opacity 0.5s ease-in;">
     <!-- 側邊欄 -->
     <aside class="card">
       <div class="sidebar-header">
@@ -455,7 +759,7 @@
       </div>
 
       <div class="step-list">
-        <div class="step-item active" data-step="1">
+        <div class="step-item" data-step="1">
           <div class="step-badge">1</div>
           <div>職缺需求（Job Intake）</div>
         </div>
@@ -474,16 +778,34 @@
       </div>
 
       <div class="sidebar-footer">
-        手機版：點上面的功能，<br />
-        會打開全螢幕生成頁，按「✕」後關閉，<br />
-        只留下下面的 AI 對話框。
+        <button class="btn-enter-chat" id="sidebar-enter-chat-btn" style="width: 100%; margin-bottom: 8px;">
+          💬 進入 AI 對話
+        </button>
+        <div style="font-size: 11px; color: var(--text-soft); line-height: 1.5;">
+          手機版：點上面的功能，<br />
+          會打開全螢幕生成頁，按「✕」後關閉。
+        </div>
       </div>
     </aside>
 
     <!-- 右側主畫面：工具（桌機）＋聊天 -->
     <main class="card">
+      <!-- 主頁歡迎訊息 -->
+      <div id="home-welcome" class="home-welcome">
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-soft);">
+          <div style="font-size: 48px; margin-bottom: 16px;">👋</div>
+          <div style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
+            歡迎使用招募顧問 AI 智能體
+          </div>
+          <div style="font-size: 14px; line-height: 1.6; max-width: 500px; margin: 0 auto;">
+            請點擊左側的功能開始使用：<br />
+            <strong>職缺需求</strong> → <strong>人才搜尋</strong> → <strong>初步篩選</strong> → <strong>面試階段</strong>
+          </div>
+        </div>
+      </div>
+      
       <!-- 工具區：桌機=內嵌，手機=彈窗 -->
-      <section id="tool-modal" class="tool-modal open">
+      <section id="tool-modal" class="tool-modal">
         <div class="tool-inner-card">
           <div class="main-header">
             <div class="main-title-wrap">
@@ -497,7 +819,7 @@
                 <div class="badge-dot"></div>
                 AI 已就緒
               </div>
-              <button class="tool-close-btn" id="tool-close-btn">✕ 關閉</button>
+              <button class="tool-close-btn" id="tool-close-btn">✕</button>
             </div>
           </div>
 
@@ -524,9 +846,9 @@
                     style="background:#e5e7eb;color:#374151;box-shadow:none;">
                     🔁 再換一個
                   </button>
-                  <button class="btn-primary" id="save-btn" disabled
+                  <button class="btn-primary" id="copy-btn" disabled
                     style="background:#22c55e;box-shadow:none;">
-                    💾 儲存
+                    📋 複製結果
                   </button>
                 </div>
               </div>
@@ -548,43 +870,107 @@
         </div>
       </section>
 
-      <!-- Chat 區塊：手機關掉工具後，只剩這個畫面 -->
-      <div class="chat-card">
-        <div class="chat-header">
+    </main>
+  </div>
+
+  <!-- 全屏 AI 對話頁面 -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="fullscreen-chat" id="fullscreen-chat">
+    <div class="fullscreen-chat-header">
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle">☰</button>
+      <div style="flex: 1; margin-left: 12px;">
+        <div style="font-weight: 700; font-size: 18px;">💬 AI 對話（HR 顧問模式）</div>
+        <div style="font-size: 12px; color: var(--text-soft); margin-top: 4px;">
+          可以問招募策略、JD 調整建議、面試問題設計等
+        </div>
+      </div>
+      <button class="btn-close-fullscreen" id="close-fullscreen-chat-btn">
+        ✕
+      </button>
+    </div>
+    
+    <div class="fullscreen-chat-body">
+      <!-- 左側導航列 -->
+      <div class="fullscreen-chat-sidebar" id="fullscreen-chat-sidebar">
+        <div class="sidebar-header">
+          <div class="logo-circle">HR</div>
           <div>
-            <div class="chat-title">💬 跟 AI 對話（HR 顧問模式）</div>
-            <div class="chat-subtitle">可以問招募策略、JD 調整建議、面試問題設計等。</div>
+            <div class="title-main">招募顧問 AI 智能體</div>
+            <div class="title-sub">Job Intake → Sourcing → Screening → Interview</div>
           </div>
         </div>
 
-        <div class="chat-window" id="chat-window">
+        <div class="step-list">
+          <div class="step-item" data-step="1" data-nav="tool">
+            <div class="step-badge">1</div>
+            <div>職缺需求（Job Intake）</div>
+          </div>
+          <div class="step-item" data-step="2" data-nav="tool">
+            <div class="step-badge">2</div>
+            <div>人才搜尋（Sourcing）</div>
+          </div>
+          <div class="step-item" data-step="3" data-nav="tool">
+            <div class="step-badge">3</div>
+            <div>初步篩選（Screening）</div>
+          </div>
+          <div class="step-item" data-step="4" data-nav="tool">
+            <div class="step-badge">4</div>
+            <div>面試階段（Interview）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側對話區域 -->
+      <div class="fullscreen-chat-main">
+        <div class="fullscreen-chat-window" id="fullscreen-chat-window">
           <div class="chat-empty">
             還沒有對話紀錄，可以試試問：<br />
             「幫我優化這個剪輯師 JD 的標題」或「我現在這個人才畫像合理嗎？」。
           </div>
         </div>
 
-        <div class="chat-input-row">
-          <input
-            type="text"
-            class="chat-input"
-            id="chat-input"
-            placeholder="輸入想問 AI 的問題，例如：幫我調整這個職缺的亮點敘述..."
-          />
-          <button class="btn-chat" id="chat-send-btn">
-            ➤ 送出
-          </button>
+        <div class="fullscreen-chat-input-area">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input
+              type="text"
+              class="chat-input"
+              id="fullscreen-chat-input"
+              placeholder="輸入想問 AI 的問題，例如：幫我調整這個職缺的亮點敘述..."
+              style="flex: 1;"
+            />
+            <button class="btn-chat" id="fullscreen-chat-send-btn">
+              ➤ 送出
+            </button>
+          </div>
+          <div class="chat-status" id="fullscreen-chat-status" style="margin-top: 8px;">狀態：待機中</div>
         </div>
-        <div class="chat-status" id="chat-status">狀態：待機中</div>
       </div>
-    </main>
+    </div>
   </div>
 
   <script>
-    // === 把這三個改成你實際的後端路徑 ===
+    // === 歡迎動畫控制 ===
+    (function() {
+      const welcomeScreen = document.getElementById("welcome-screen");
+      const appShell = document.getElementById("app-shell");
+      
+      if (welcomeScreen && appShell) {
+        // 動畫總時長約 2.5 秒，然後淡出並隱藏
+        setTimeout(() => {
+          welcomeScreen.classList.add("hidden");
+          // 同時顯示主頁面
+          appShell.style.opacity = "1";
+          // 動畫結束後完全移除歡迎頁面
+          setTimeout(() => {
+            welcomeScreen.style.display = "none";
+          }, 800); // 等待淡出動畫完成
+        }, 2500); // 2.5 秒後開始淡出
+      }
+    })();
+
+    // === API 路徑 ===
     const API_URL = "/api/hr-agent";    // 四個功能的生成用
     const CHAT_API_URL = "/api/hr-chat"; // 跟 AI 對話用
-    const SAVE_API_URL = "/api/hr-save"; // 儲存履歷分析 / 面談問題等用
 
     const steps = document.querySelectorAll(".step-item");
     const mainTitle = document.getElementById("main-title");
@@ -594,16 +980,21 @@
     const outputPre = document.getElementById("output-pre");
     const runBtn = document.getElementById("run-btn");
     const retryBtn = document.getElementById("retry-btn");
-    const saveBtn = document.getElementById("save-btn");
+    const copyBtn = document.getElementById("copy-btn");
     const statusEl = document.getElementById("status");
     const toolModal = document.getElementById("tool-modal");
     const toolCloseBtn = document.getElementById("tool-close-btn");
 
-    // Chat 元件
-    const chatWindow = document.getElementById("chat-window");
-    const chatInput = document.getElementById("chat-input");
-    const chatSendBtn = document.getElementById("chat-send-btn");
-    const chatStatus = document.getElementById("chat-status");
+    // 全屏對話元件
+    const fullscreenChat = document.getElementById("fullscreen-chat");
+    const fullscreenChatWindow = document.getElementById("fullscreen-chat-window");
+    const fullscreenChatInput = document.getElementById("fullscreen-chat-input");
+    const fullscreenChatSendBtn = document.getElementById("fullscreen-chat-send-btn");
+    const fullscreenChatStatus = document.getElementById("fullscreen-chat-status");
+    const closeFullscreenBtn = document.getElementById("close-fullscreen-chat-btn");
+    const mobileNavToggle = document.getElementById("mobile-nav-toggle");
+    const fullscreenChatSidebar = document.getElementById("fullscreen-chat-sidebar");
+    const sidebarOverlay = document.getElementById("sidebar-overlay");
 
     // 四階段設定
     const STEP_CONFIG = {
@@ -646,14 +1037,18 @@
     }
 
     function openToolModal() {
-      if (isMobile()) {
-        toolModal.classList.add("open");
+      toolModal.classList.add("open");
+      const homeWelcome = document.getElementById("home-welcome");
+      if (homeWelcome) {
+        homeWelcome.style.display = "none";
       }
     }
 
     function closeToolModal() {
-      if (isMobile()) {
-        toolModal.classList.remove("open");
+      toolModal.classList.remove("open");
+      const homeWelcome = document.getElementById("home-welcome");
+      if (homeWelcome) {
+        homeWelcome.style.display = "block";
       }
     }
 
@@ -679,7 +1074,7 @@
         // 切換步驟後，清掉上一筆暫存結果
         lastResultPayload = null;
         retryBtn.disabled = true;
-        saveBtn.disabled = true;
+        copyBtn.disabled = true;
 
         // 手機版：點功能就打開工具彈窗
         openToolModal();
@@ -703,7 +1098,7 @@
 
       runBtn.disabled = true;
       retryBtn.disabled = true;
-      saveBtn.disabled = true;
+      copyBtn.disabled = true;
 
       const actionText = isRetry ? "（再換一個）" : "";
       setStatus(
@@ -729,36 +1124,34 @@
 
         const data = await res.json();
 
-        let resultObject;
-        let display;
+        let displayText;
 
         if (data == null) {
-          display = "未收到有效結果，請稍後再試。";
-          resultObject = null;
+          displayText = "未收到有效結果，請稍後再試。";
         } else if (typeof data.result === "string") {
-          display = data.result;
-          resultObject = data.result;
+          displayText = data.result;
         } else if (data.result) {
-          display = JSON.stringify(data.result, null, 2);
-          resultObject = data.result;
+          // 如果是物件，轉換為自然語言格式
+          displayText = typeof data.result === 'object' 
+            ? JSON.stringify(data.result, null, 2) 
+            : String(data.result);
         } else {
-          display = JSON.stringify(data, null, 2);
-          resultObject = data;
+          displayText = JSON.stringify(data, null, 2);
         }
 
-        outputPre.textContent = display;
+        outputPre.textContent = displayText;
         setStatus("", "分析完成！");
 
-        // ⭐ 存起來給「儲存」用
+        // ⭐ 存起來給「複製」用
         lastResultPayload = {
           step: conf.stepKey,
           input: text,
-          result: resultObject
+          result: displayText
         };
 
-        // 這時候才能再按「再換一個」和「儲存」
+        // 這時候才能再按「再換一個」和「複製」
         retryBtn.disabled = false;
-        saveBtn.disabled = false;
+        copyBtn.disabled = false;
       } catch (err) {
         console.error(err);
         setStatus("error", "處理失敗：" + err.message);
@@ -775,49 +1168,114 @@
     // 🔁 再換一個（同樣 step & input 再叫一次）
     retryBtn.addEventListener("click", () => callHrAgent(true));
 
-    // 💾 儲存目前結果
-    saveBtn.addEventListener("click", async () => {
-      if (!lastResultPayload) {
-        setStatus("error", "目前沒有可以儲存的結果，請先讓 AI 生成一次。");
+    // 📋 複製目前結果
+    copyBtn.addEventListener("click", async () => {
+      if (!lastResultPayload || !lastResultPayload.result) {
+        setStatus("error", "目前沒有可以複製的結果，請先讓 AI 生成一次。");
         return;
       }
 
       try {
-        saveBtn.disabled = true;
-        setStatus("loading", "正在儲存結果…");
-
-        const res = await fetch(SAVE_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(lastResultPayload)
-          // 之後你要加 userId / conversationId 也可以在這裡一起傳
-        });
-
-        if (!res.ok) {
-          throw new Error("HTTP 狀態碼 " + res.status);
-        }
-
-        const data = await res.json();
-        setStatus("", "已成功儲存！");
+        const textToCopy = typeof lastResultPayload.result === 'string' 
+          ? lastResultPayload.result 
+          : JSON.stringify(lastResultPayload.result, null, 2);
+        
+        await navigator.clipboard.writeText(textToCopy);
+        setStatus("", "已複製到剪貼簿！");
+        
+        // 2 秒後恢復狀態
+        setTimeout(() => {
+          setStatus("", "分析完成！");
+        }, 2000);
       } catch (err) {
         console.error(err);
-        setStatus("error", "儲存失敗：" + err.message);
-      } finally {
-        saveBtn.disabled = false;
+        // 如果 clipboard API 不可用，使用傳統方法
+        try {
+          const textArea = document.createElement("textarea");
+          const textToCopy = typeof lastResultPayload.result === 'string' 
+            ? lastResultPayload.result 
+            : JSON.stringify(lastResultPayload.result, null, 2);
+          textArea.value = textToCopy;
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+          setStatus("", "已複製到剪貼簿！");
+          setTimeout(() => {
+            setStatus("", "分析完成！");
+          }, 2000);
+        } catch (fallbackErr) {
+          setStatus("error", "複製失敗：" + err.message);
+        }
       }
     });
 
     // === Chat 功能 ===
     let chatHistory = []; // { role: 'user' | 'assistant', content: string }
+    let isThinking = false;
 
-    function renderChat() {
-      if (!chatHistory.length) {
-        chatWindow.innerHTML =
+    // 將 markdown 轉換為自然語言 HTML（移除 markdown 語法，保留格式）
+    function markdownToNaturalLanguage(text) {
+      if (!text) return '';
+      
+      // 先轉義 HTML 特殊字符，避免 XSS
+      const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      };
+      text = escapeHtml(text);
+      
+      // 移除代碼塊（多行和單行）
+      text = text.replace(/```[\s\S]*?```/g, '');
+      text = text.replace(/`([^`\n]+)`/g, '$1');
+      
+      // 轉換粗體 **text** 或 __text__ → <strong>text</strong>（優先處理）
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      
+      // 轉換斜體 *text* 或 _text_ → <em>text</em>
+      // 使用臨時標記避免與粗體衝突
+      text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
+      text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+      text = text.replace(/___STRONG_START___/g, '<strong>');
+      text = text.replace(/___STRONG_END___/g, '</strong>');
+      
+      // 移除列表標記（-、*、數字），但保留內容
+      text = text.replace(/^[\s]*[-*•]\s+/gm, '');
+      text = text.replace(/^\d+\.\s+/gm, '');
+      
+      // 移除標題標記（#、##、###）
+      text = text.replace(/^#{1,6}\s+/gm, '');
+      
+      // 移除 markdown 連結語法 [text](url) → text
+      text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+      
+      // 移除其他 markdown 語法
+      text = text.replace(/~~([^~]+)~~/g, '$1'); // 刪除線
+      text = text.replace(/^>\s+/gm, ''); // 引用
+      
+      // 保留換行（\n 轉為 <br>）
+      text = text.replace(/\n/g, '<br>');
+      
+      // 移除多餘的空白行
+      text = text.replace(/(<br>\s*){3,}/g, '<br><br>');
+      
+      return text.trim();
+    }
+
+    // 渲染聊天訊息到指定容器
+    function renderChatToContainer(container) {
+      if (!chatHistory.length && !isThinking) {
+        container.innerHTML =
           '<div class="chat-empty">還沒有對話紀錄，可以試試問：<br />「幫我優化這個剪輯師 JD 的標題」或「我現在這個人才畫像合理嗎？」。</div>';
         return;
       }
 
-      chatWindow.innerHTML = "";
+      container.innerHTML = "";
       chatHistory.forEach((msg) => {
         const row = document.createElement("div");
         row.className = "chat-msg " + (msg.role === "user" ? "me" : "ai");
@@ -830,31 +1288,67 @@
         roleLabel.textContent = msg.role === "user" ? "你：" : "AI：";
 
         const content = document.createElement("div");
-        content.textContent = msg.content;
+        content.className = "chat-content";
+        // 使用 innerHTML 來顯示格式化的內容
+        content.innerHTML = markdownToNaturalLanguage(msg.content);
 
         bubble.appendChild(roleLabel);
         bubble.appendChild(content);
         row.appendChild(bubble);
-        chatWindow.appendChild(row);
+        container.appendChild(row);
       });
 
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+      // 如果正在思考，顯示思考動畫
+      if (isThinking) {
+        const row = document.createElement("div");
+        row.className = "chat-msg ai";
+
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+
+        const roleLabel = document.createElement("div");
+        roleLabel.className = "chat-role";
+        roleLabel.textContent = "AI：";
+
+        const thinkingDiv = document.createElement("div");
+        thinkingDiv.className = "thinking";
+        thinkingDiv.innerHTML = 'AI思考中<span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span>';
+
+        bubble.appendChild(roleLabel);
+        bubble.appendChild(thinkingDiv);
+        row.appendChild(bubble);
+        container.appendChild(row);
+      }
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 渲染聊天訊息（只渲染到全屏對話窗口）
+    function renderChat() {
+      if (fullscreenChat.classList.contains('active')) {
+        renderChatToContainer(fullscreenChatWindow);
+      }
     }
 
     function setChatStatus(text) {
-      chatStatus.textContent = "狀態：" + text;
+      if (fullscreenChat.classList.contains('active')) {
+        fullscreenChatStatus.textContent = "狀態：" + text;
+      }
     }
 
-    async function sendChat() {
-      const text = chatInput.value.trim();
+    async function sendChat(inputElement, sendBtn) {
+      const text = inputElement.value.trim();
       if (!text) return;
 
       chatHistory.push({ role: "user", content: text });
-      chatInput.value = "";
+      inputElement.value = "";
+      
+      // 顯示思考動畫
+      isThinking = true;
       renderChat();
 
-      chatSendBtn.disabled = true;
-      setChatStatus("正在處理中…");
+      sendBtn.disabled = true;
+      setChatStatus("AI 正在思考…");
 
       try {
         const res = await fetch(CHAT_API_URL, {
@@ -870,26 +1364,102 @@
         }
 
         const data = await res.json();
-        const reply =
-          data.reply || data.result || data.message || JSON.stringify(data);
+        let reply = data.reply || data.result || data.message || JSON.stringify(data);
+        
+        // 確保回覆是字串格式
+        if (typeof reply !== 'string') {
+          reply = JSON.stringify(reply, null, 2);
+        }
 
+        // 移除思考動畫，添加 AI 回覆
+        isThinking = false;
         chatHistory.push({ role: "assistant", content: reply });
         renderChat();
         setChatStatus("已收到回覆");
       } catch (err) {
         console.error(err);
+        isThinking = false;
+        renderChat();
         setChatStatus("處理失敗：" + err.message);
       } finally {
-        chatSendBtn.disabled = false;
+        sendBtn.disabled = false;
       }
     }
 
-    chatSendBtn.addEventListener("click", sendChat);
-    chatInput.addEventListener("keydown", (e) => {
+    // 全屏對話的聊天按鈕
+    fullscreenChatSendBtn.addEventListener("click", () => sendChat(fullscreenChatInput, fullscreenChatSendBtn));
+    fullscreenChatInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        sendChat();
+        sendChat(fullscreenChatInput, fullscreenChatSendBtn);
       }
+    });
+
+    // 進入全屏對話（從側邊欄按鈕）
+    const sidebarEnterChatBtn = document.getElementById("sidebar-enter-chat-btn");
+    if (sidebarEnterChatBtn) {
+      sidebarEnterChatBtn.addEventListener("click", () => {
+        fullscreenChat.classList.add("active");
+        renderChat(); // 確保全屏對話顯示最新的聊天記錄
+        fullscreenChatInput.focus();
+      });
+    }
+
+
+    // 關閉全屏對話
+    closeFullscreenBtn.addEventListener("click", () => {
+      fullscreenChat.classList.remove("active");
+      if (fullscreenChatSidebar) {
+        fullscreenChatSidebar.classList.remove("open");
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.classList.remove("open");
+      }
+    });
+
+    // 手機版導航切換
+    if (mobileNavToggle) {
+      mobileNavToggle.addEventListener("click", () => {
+        const isOpen = fullscreenChatSidebar.classList.contains("open");
+        fullscreenChatSidebar.classList.toggle("open");
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.toggle("open", !isOpen);
+        }
+      });
+      
+      // 點擊遮罩關閉側邊欄
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", () => {
+          fullscreenChatSidebar.classList.remove("open");
+          sidebarOverlay.classList.remove("open");
+        });
+      }
+    }
+
+    // 全屏對話中的導航列：點擊後切換回四大功能
+    const fullscreenNavItems = fullscreenChat.querySelectorAll(".step-item[data-nav='tool']");
+    fullscreenNavItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        const stepKey = item.dataset.step;
+        
+        // 關閉手機版側邊欄
+        if (fullscreenChatSidebar) {
+          fullscreenChatSidebar.classList.remove("open");
+        }
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove("open");
+        }
+        
+        // 關閉全屏對話
+        fullscreenChat.classList.remove("active");
+        
+        // 切換到對應的功能
+        steps.forEach((s) => {
+          if (s.dataset.step === stepKey) {
+            s.click(); // 觸發原本的切換邏輯
+          }
+        });
+      });
     });
 
     // 初始化 chat 畫面

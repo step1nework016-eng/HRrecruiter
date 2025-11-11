@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getPrompt } from '../services/prompts';
-import { generateText, tryParseJSON } from '../services/llmClient';
+import { generateText } from '../services/llmClient';
 
 const router = Router();
 
@@ -36,20 +36,11 @@ router.post('/', async (req: Request, res: Response) => {
 
     console.log(`[HR Agent] 步驟: ${step}, 模式: ${mode}, 輸入長度: ${input.length}`);
 
-    // 呼叫 LLM
+    // 呼叫 LLM（現在返回自然語言，不需要解析 JSON）
     const rawResponse = await generateText(prompt, temperature);
 
-    // 嘗試解析為 JSON（如果失敗則返回原始文字）
-    let result: any;
-    try {
-      result = tryParseJSON(rawResponse);
-    } catch {
-      // 如果無法解析為 JSON，直接使用原始文字
-      result = rawResponse;
-    }
-
-    // 回傳結果
-    res.json({ result });
+    // 直接返回自然語言結果
+    res.json({ result: rawResponse });
   } catch (error) {
     console.error('[HR Agent] 錯誤:', error);
     if (error instanceof Error) {

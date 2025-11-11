@@ -18,9 +18,9 @@ export async function generateText(
   temperature: number = 0.7
 ): Promise<string> {
   try {
-    // 使用 Gemini 2.0 Flash 模型
+    // 使用 Gemini 1.5 Flash 模型（支援免費層）
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         temperature,
         topP: 0.95,
@@ -37,6 +37,11 @@ export async function generateText(
     if (error instanceof Error) {
       console.error('錯誤訊息:', error.message);
       console.error('錯誤堆疊:', error.stack);
+      
+      // 處理配額錯誤，提供更友好的錯誤訊息
+      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Quota exceeded')) {
+        throw new Error('API 配額已用盡，請檢查您的 Google AI Studio 配額設定，或稍後再試。');
+      }
     }
     throw new Error(`LLM 呼叫失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
   }
@@ -53,9 +58,9 @@ export async function generateChat(
   systemPrompt?: string
 ): Promise<string> {
   try {
-    // 使用 Gemini 2.0 Flash 模型
+    // 使用 Gemini 1.5 Flash 模型（支援免費層）
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.7,
         topP: 0.95,
@@ -89,6 +94,11 @@ export async function generateChat(
     if (error instanceof Error) {
       console.error('錯誤訊息:', error.message);
       console.error('錯誤堆疊:', error.stack);
+      
+      // 處理配額錯誤，提供更友好的錯誤訊息
+      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Quota exceeded')) {
+        throw new Error('API 配額已用盡，請檢查您的 Google AI Studio 配額設定，或稍後再試。');
+      }
     }
     throw new Error(`LLM 對話失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
   }

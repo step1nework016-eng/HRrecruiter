@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { generateChat, generateChatStream } from '../services/llmClient';
 import { CHAT_SYSTEM_PROMPT } from '../services/prompts';
+import { cleanStrongMarkers } from '../utils/cleanMarkers';
 
 const router = Router();
 
@@ -42,29 +43,9 @@ router.post('/', async (req: Request, res: Response) => {
       res.setHeader('Connection', 'keep-alive');
 
       try {
-        // 清理函數：移除 LLM 可能輸出的奇怪標記
-        const cleanChunk = (text: string): string => {
-          let cleaned = text;
-          // 多次清理確保所有變體都被移除
-          cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
-          cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
-          cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
-          cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
-          cleaned = cleaned.replace(/_+STRONG\s*START_+/gi, '');
-          cleaned = cleaned.replace(/_+STRONG\s*END_+/gi, '');
-          cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-          cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-          cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-          cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-          // 最後用最寬鬆的模式：直接移除關鍵字
-          cleaned = cleaned.replace(/STRONGSTART/gi, '');
-          cleaned = cleaned.replace(/STRONGEND/gi, '');
-          return cleaned;
-        };
-
         await generateChatStream(messages, CHAT_SYSTEM_PROMPT, (chunk) => {
           // 清理每個文字塊後再發送
-          const cleanedChunk = cleanChunk(chunk);
+          const cleanedChunk = cleanStrongMarkers(chunk);
           res.write(`data: ${JSON.stringify({ chunk: cleanedChunk })}\n\n`);
         });
 
@@ -82,20 +63,7 @@ router.post('/', async (req: Request, res: Response) => {
     const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT);
     
     // 清理 LLM 可能輸出的奇怪標記
-    let cleanedReply = reply;
-    cleanedReply = cleanedReply.replace(/_+STRONGSTART_+/gi, '');
-    cleanedReply = cleanedReply.replace(/_+STRONGEND_+/gi, '');
-    cleanedReply = cleanedReply.replace(/_+STRONG_START_+/gi, '');
-    cleanedReply = cleanedReply.replace(/_+STRONG_END_+/gi, '');
-    cleanedReply = cleanedReply.replace(/_+STRONG\s*START_+/gi, '');
-    cleanedReply = cleanedReply.replace(/_+STRONG\s*END_+/gi, '');
-    cleanedReply = cleanedReply.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-    cleanedReply = cleanedReply.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-    cleanedReply = cleanedReply.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-    cleanedReply = cleanedReply.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-    // 最後用最寬鬆的模式：直接移除關鍵字
-    cleanedReply = cleanedReply.replace(/STRONGSTART/gi, '');
-    cleanedReply = cleanedReply.replace(/STRONGEND/gi, '');
+    const cleanedReply = cleanStrongMarkers(reply);
     
     res.json({ reply: cleanedReply });
   } catch (error) {

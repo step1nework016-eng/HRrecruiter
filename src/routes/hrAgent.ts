@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getPrompt } from '../services/prompts';
 import { generateText } from '../services/llmClient';
+import { cleanStrongMarkers } from '../utils/cleanMarkers';
 
 const router = Router();
 
@@ -40,22 +41,7 @@ router.post('/', async (req: Request, res: Response) => {
     const rawResponse = await generateText(prompt, temperature);
 
     // 清理 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
-    // 使用最簡單直接的方式：匹配任何包含這些關鍵字的標記
-    let cleanedResponse = rawResponse;
-    // 多次清理確保所有變體都被移除
-    cleanedResponse = cleanedResponse.replace(/_+STRONGSTART_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/_+STRONGEND_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/_+STRONG_START_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/_+STRONG_END_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/_+STRONG\s*START_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/_+STRONG\s*END_+/gi, '');
-    cleanedResponse = cleanedResponse.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-    cleanedResponse = cleanedResponse.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-    cleanedResponse = cleanedResponse.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-    cleanedResponse = cleanedResponse.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-    // 最後用最寬鬆的模式：匹配任何包含 STRONGSTART 或 STRONGEND 的標記
-    cleanedResponse = cleanedResponse.replace(/STRONGSTART/gi, '');
-    cleanedResponse = cleanedResponse.replace(/STRONGEND/gi, '');
+    const cleanedResponse = cleanStrongMarkers(rawResponse);
 
     // 返回清理後的自然語言結果
     res.json({ result: cleanedResponse });

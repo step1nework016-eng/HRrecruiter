@@ -6,6 +6,7 @@ export function cleanStrongMarkers(text: string): string {
   if (!text) return text;
   
   let cleaned = text;
+  const originalLength = cleaned.length;
   
   // 使用最直接的方式：匹配任何包含 STRONGSTART 或 STRONGEND 的標記
   // 多次清理確保所有變體都被移除
@@ -39,6 +40,11 @@ export function cleanStrongMarkers(text: string): string {
   // 模式7: 額外清理，確保移除任何殘留的底線組合
   // 例如：如果標記被部分移除後留下的底線
   cleaned = cleaned.replace(/_{2,}/g, ''); // 移除多個連續的底線
+  
+  // 記錄清理結果（僅在開發環境）
+  if (process.env.NODE_ENV === 'development' && cleaned.length !== originalLength) {
+    console.log(`[Clean Markers] 已清理 ${originalLength - cleaned.length} 個字符的標記`);
+  }
   
   return cleaned;
 }

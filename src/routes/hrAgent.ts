@@ -39,8 +39,21 @@ router.post('/', async (req: Request, res: Response) => {
     // 呼叫 LLM（現在返回自然語言，不需要解析 JSON）
     const rawResponse = await generateText(prompt, temperature);
 
-    // 直接返回自然語言結果
-    res.json({ result: rawResponse });
+    // 清理 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
+    const cleanedResponse = rawResponse
+      .replace(/_+STRONGSTART_+/gi, '')
+      .replace(/_+STRONGEND_+/gi, '')
+      .replace(/_+STRONG_START_+/gi, '')
+      .replace(/_+STRONG_END_+/gi, '')
+      .replace(/_+STRONG\s*START_+/gi, '')
+      .replace(/_+STRONG\s*END_+/gi, '')
+      .replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '')
+      .replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '')
+      .replace(/[_\s]*STRONGSTART[_\s]*/gi, '')
+      .replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+
+    // 返回清理後的自然語言結果
+    res.json({ result: cleanedResponse });
   } catch (error) {
     console.error('[HR Agent] 錯誤:', error);
     if (error instanceof Error) {

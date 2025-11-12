@@ -42,9 +42,25 @@ router.post('/', async (req: Request, res: Response) => {
       res.setHeader('Connection', 'keep-alive');
 
       try {
+        // 清理函數：移除 LLM 可能輸出的奇怪標記
+        const cleanChunk = (text: string): string => {
+          return text
+            .replace(/_+STRONGSTART_+/gi, '')
+            .replace(/_+STRONGEND_+/gi, '')
+            .replace(/_+STRONG_START_+/gi, '')
+            .replace(/_+STRONG_END_+/gi, '')
+            .replace(/_+STRONG\s*START_+/gi, '')
+            .replace(/_+STRONG\s*END_+/gi, '')
+            .replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '')
+            .replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '')
+            .replace(/[_\s]*STRONGSTART[_\s]*/gi, '')
+            .replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+        };
+
         await generateChatStream(messages, CHAT_SYSTEM_PROMPT, (chunk) => {
-          // 發送每個文字塊
-          res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+          // 清理每個文字塊後再發送
+          const cleanedChunk = cleanChunk(chunk);
+          res.write(`data: ${JSON.stringify({ chunk: cleanedChunk })}\n\n`);
         });
 
         // 發送結束標記
@@ -59,7 +75,21 @@ router.post('/', async (req: Request, res: Response) => {
 
     // 非流式輸出（原有邏輯）
     const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT);
-    res.json({ reply });
+    
+    // 清理 LLM 可能輸出的奇怪標記
+    const cleanedReply = reply
+      .replace(/_+STRONGSTART_+/gi, '')
+      .replace(/_+STRONGEND_+/gi, '')
+      .replace(/_+STRONG_START_+/gi, '')
+      .replace(/_+STRONG_END_+/gi, '')
+      .replace(/_+STRONG\s*START_+/gi, '')
+      .replace(/_+STRONG\s*END_+/gi, '')
+      .replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '')
+      .replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '')
+      .replace(/[_\s]*STRONGSTART[_\s]*/gi, '')
+      .replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+    
+    res.json({ reply: cleanedReply });
   } catch (error) {
     console.error('[HR Chat] 錯誤:', error);
     res.status(500).json({

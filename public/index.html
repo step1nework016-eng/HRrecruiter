@@ -1276,15 +1276,33 @@
           displayText = JSON.stringify(data, null, 2);
         }
 
+        // 先清理標記，再轉換 markdown 格式
+        // 使用與後端相同的清理邏輯，確保所有變體都被移除
+        let cleanedText = displayText;
+        // 多次清理確保所有變體都被移除
+        cleanedText = cleanedText.replace(/_+STRONGSTART_+/gi, '');
+        cleanedText = cleanedText.replace(/_+STRONGEND_+/gi, '');
+        cleanedText = cleanedText.replace(/_+STRONG_START_+/gi, '');
+        cleanedText = cleanedText.replace(/_+STRONG_END_+/gi, '');
+        cleanedText = cleanedText.replace(/_+STRONG\s*START_+/gi, '');
+        cleanedText = cleanedText.replace(/_+STRONG\s*END_+/gi, '');
+        cleanedText = cleanedText.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
+        cleanedText = cleanedText.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
+        cleanedText = cleanedText.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
+        cleanedText = cleanedText.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+        cleanedText = cleanedText.replace(/STRONGSTART/gi, '');
+        cleanedText = cleanedText.replace(/STRONGEND/gi, '');
+        cleanedText = cleanedText.replace(/_{2,}/g, ''); // 移除多個連續的底線
+        
         // 使用 innerHTML 並轉換 markdown 格式（移除 ** 和 * 符號，轉為 HTML）
-        outputPre.innerHTML = markdownToNaturalLanguage(displayText);
+        outputPre.innerHTML = markdownToNaturalLanguage(cleanedText);
         setStatus("", "分析完成！");
 
-        // ⭐ 存起來給「複製」用
+        // ⭐ 存起來給「複製」用（保存清理後的文本）
         lastResultPayload = {
           step: conf.stepKey,
           input: text,
-          result: displayText
+          result: cleanedText  // 保存清理後的文本，而不是原始文本
         };
 
         // 自動儲存到資料庫（使用 session ID）
@@ -1295,7 +1313,7 @@
             body: JSON.stringify({
               step: conf.stepKey,
               input: text,
-              result: displayText,
+              result: cleanedText,  // 儲存清理後的文本
               user_id: getSessionId()
             })
           });
@@ -1377,40 +1395,35 @@
     let chatHistory = []; // { role: 'user' | 'assistant', content: string }
     let isThinking = false;
 
+    // 清理 LLM 輸出中的奇怪標記（與後端使用相同的邏輯）
+    function cleanStrongMarkersFrontend(text) {
+      if (!text) return text;
+      
+      let cleaned = text;
+      // 多次清理確保所有變體都被移除
+      cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG\s*START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG\s*END_+/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+      cleaned = cleaned.replace(/STRONGSTART/gi, '');
+      cleaned = cleaned.replace(/STRONGEND/gi, '');
+      cleaned = cleaned.replace(/_{2,}/g, ''); // 移除多個連續的底線
+      return cleaned;
+    }
+
     // 將 markdown 轉換為自然語言 HTML（移除 markdown 語法，保留格式）
     function markdownToNaturalLanguage(text) {
       if (!text) return '';
       
       // 先移除 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
       // 使用與後端相同的清理邏輯，確保所有變體都被移除
-      
-      // 模式1: 匹配 _STRONGSTART_ 或 _STRONGEND_（任意數量的底線）
-      text = text.replace(/_+STRONGSTART_+/gi, '');
-      text = text.replace(/_+STRONGEND_+/gi, '');
-      
-      // 模式2: 匹配 _STRONG_START_ 或 _STRONG_END_（中間有底線）
-      text = text.replace(/_+STRONG_START_+/gi, '');
-      text = text.replace(/_+STRONG_END_+/gi, '');
-      
-      // 模式3: 匹配 _STRONG START_ 或 _STRONG END_（中間有空格）
-      text = text.replace(/_+STRONG\s+START_+/gi, '');
-      text = text.replace(/_+STRONG\s+END_+/gi, '');
-      
-      // 模式4: 匹配任意數量的底線/空格 + STRONG + 任意字符 + START/END + 任意數量的底線/空格
-      text = text.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-      text = text.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-      
-      // 模式5: 匹配任意數量的底線/空格 + STRONGSTART/STRONGEND + 任意數量的底線/空格
-      text = text.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-      text = text.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-      
-      // 模式6: 最寬鬆的模式，直接移除關鍵字（確保不會遺漏）
-      text = text.replace(/STRONGSTART/gi, '');
-      text = text.replace(/STRONGEND/gi, '');
-      
-      // 模式7: 額外清理，確保移除任何殘留的底線組合
-      // 例如：如果標記被部分移除後留下的底線
-      text = text.replace(/_{2,}/g, ''); // 移除多個連續的底線
+      text = cleanStrongMarkersFrontend(text);
       
       // 先轉義 HTML 特殊字符，避免 XSS
       const escapeHtml = (str) => {

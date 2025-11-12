@@ -10,6 +10,12 @@ export function cleanStrongMarkers(text: string): string {
   
   // 使用最直接的方式：匹配任何包含 STRONGSTART 或 STRONGEND 的標記
   // 多次清理確保所有變體都被移除
+  // 注意：先執行最寬鬆的模式，確保所有標記都被移除
+  
+  // 模式0: 最寬鬆的模式，直接移除關鍵字（優先執行，確保不會遺漏）
+  // 這會移除任何包含 STRONGSTART 或 STRONGEND 的文字，不管前後有什麼
+  cleaned = cleaned.replace(/STRONGSTART/gi, '');
+  cleaned = cleaned.replace(/STRONGEND/gi, '');
   
   // 模式1: 匹配 _STRONGSTART_ 或 _STRONGEND_（任意數量的底線，包括多個底線）
   // 例如：_STRONGSTART_、_STRONGSTART__、__STRONGSTART__ 等
@@ -32,8 +38,7 @@ export function cleanStrongMarkers(text: string): string {
   cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
   cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
   
-  // 模式6: 最寬鬆的模式，直接移除關鍵字（確保不會遺漏）
-  // 這會移除任何包含 STRONGSTART 或 STRONGEND 的文字，不管前後有什麼
+  // 模式6: 再次執行最寬鬆的模式（確保沒有遺漏）
   cleaned = cleaned.replace(/STRONGSTART/gi, '');
   cleaned = cleaned.replace(/STRONGEND/gi, '');
   
@@ -44,6 +49,14 @@ export function cleanStrongMarkers(text: string): string {
   // 記錄清理結果（僅在開發環境）
   if (process.env.NODE_ENV === 'development' && cleaned.length !== originalLength) {
     console.log(`[Clean Markers] 已清理 ${originalLength - cleaned.length} 個字符的標記`);
+  }
+  
+  // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
+  if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
+    console.warn('[Clean Markers] 警告：清理後仍發現標記，將再次清理');
+    cleaned = cleaned.replace(/STRONGSTART/gi, '');
+    cleaned = cleaned.replace(/STRONGEND/gi, '');
+    cleaned = cleaned.replace(/_{2,}/g, '');
   }
   
   return cleaned;

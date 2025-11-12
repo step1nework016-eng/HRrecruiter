@@ -1277,22 +1277,14 @@
         }
 
         // 先清理標記，再轉換 markdown 格式
-        // 使用與後端相同的清理邏輯，確保所有變體都被移除
-        let cleanedText = displayText;
-        // 多次清理確保所有變體都被移除
-        cleanedText = cleanedText.replace(/_+STRONGSTART_+/gi, '');
-        cleanedText = cleanedText.replace(/_+STRONGEND_+/gi, '');
-        cleanedText = cleanedText.replace(/_+STRONG_START_+/gi, '');
-        cleanedText = cleanedText.replace(/_+STRONG_END_+/gi, '');
-        cleanedText = cleanedText.replace(/_+STRONG\s*START_+/gi, '');
-        cleanedText = cleanedText.replace(/_+STRONG\s*END_+/gi, '');
-        cleanedText = cleanedText.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-        cleanedText = cleanedText.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-        cleanedText = cleanedText.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-        cleanedText = cleanedText.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-        cleanedText = cleanedText.replace(/STRONGSTART/gi, '');
-        cleanedText = cleanedText.replace(/STRONGEND/gi, '');
-        cleanedText = cleanedText.replace(/_{2,}/g, ''); // 移除多個連續的底線
+        // 使用統一的清理函數，確保所有變體都被移除
+        let cleanedText = cleanStrongMarkersFrontend(displayText);
+        
+        // 調試：檢查是否還有標記（僅在開發時）
+        if (cleanedText.includes('STRONGSTART') || cleanedText.includes('STRONGEND')) {
+          console.warn('[前端清理] 警告：清理後仍發現標記，將再次清理');
+          cleanedText = cleanStrongMarkersFrontend(cleanedText); // 再次清理
+        }
         
         // 使用 innerHTML 並轉換 markdown 格式（移除 ** 和 * 符號，轉為 HTML）
         outputPre.innerHTML = markdownToNaturalLanguage(cleanedText);
@@ -1401,19 +1393,39 @@
       
       let cleaned = text;
       // 多次清理確保所有變體都被移除
-      cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG\s*START_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG\s*END_+/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+      // 注意：先執行最寬鬆的模式，確保所有標記都被移除
+      
+      // 模式0: 最寬鬆的模式，直接移除關鍵字（優先執行）
       cleaned = cleaned.replace(/STRONGSTART/gi, '');
       cleaned = cleaned.replace(/STRONGEND/gi, '');
+      
+      // 模式1: 匹配 _STRONGSTART_ 或 _STRONGEND_（任意數量的底線）
+      cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
+      
+      // 模式2: 匹配 _STRONG_START_ 或 _STRONG_END_（中間有底線）
+      cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
+      
+      // 模式3: 匹配 _STRONG START_ 或 _STRONG END_（中間有空格）
+      cleaned = cleaned.replace(/_+STRONG\s*START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG\s*END_+/gi, '');
+      
+      // 模式4: 匹配任意數量的底線/空格 + STRONG + 任意字符 + START/END + 任意數量的底線/空格
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
+      
+      // 模式5: 匹配任意數量的底線/空格 + STRONGSTART/STRONGEND + 任意數量的底線/空格
+      cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+      
+      // 模式6: 再次執行最寬鬆的模式（確保沒有遺漏）
+      cleaned = cleaned.replace(/STRONGSTART/gi, '');
+      cleaned = cleaned.replace(/STRONGEND/gi, '');
+      
+      // 模式7: 額外清理，確保移除任何殘留的底線組合
       cleaned = cleaned.replace(/_{2,}/g, ''); // 移除多個連續的底線
+      
       return cleaned;
     }
 

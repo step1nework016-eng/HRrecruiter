@@ -574,12 +574,47 @@
       gap: 0;
       overflow: hidden;
     }
-    .fullscreen-chat-sidebar {
-      border-right: 1px solid var(--border);
-      padding: 20px;
-      background: var(--card);
-      overflow-y: auto;
-    }
+      .fullscreen-chat-sidebar {
+        border-right: 1px solid var(--border);
+        padding: 20px;
+        background: var(--card);
+        overflow-y: auto;
+        position: relative;
+      }
+      .fullscreen-chat-sidebar .sidebar-header {
+        position: relative;
+        padding-left: 0;
+      }
+      .sidebar-close-btn {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 16px;
+        cursor: pointer;
+        color: var(--text-soft);
+        z-index: 10;
+        min-width: 32px;
+        height: 32px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .sidebar-close-btn:hover {
+        background: #f9fafb;
+        color: var(--text-main);
+      }
+      @media (max-width: 900px) {
+        .fullscreen-chat-sidebar .sidebar-header {
+          padding-left: 40px;
+        }
+        .sidebar-close-btn {
+          display: flex !important;
+        }
+      }
     .fullscreen-chat-main {
       display: flex;
       flex-direction: column;
@@ -673,6 +708,9 @@
       }
       .fullscreen-chat-sidebar.open {
         left: 0;
+      }
+      .fullscreen-chat-sidebar.open .sidebar-close-btn {
+        display: flex !important;
       }
       .mobile-nav-toggle {
         display: flex;
@@ -977,6 +1015,7 @@
       <!-- 左側導航列 -->
       <div class="fullscreen-chat-sidebar" id="fullscreen-chat-sidebar">
         <div class="sidebar-header">
+          <button class="sidebar-close-btn" id="sidebar-close-btn" style="display: none;">✕</button>
           <div class="logo-circle">HR</div>
           <div>
             <div class="title-main">招募顧問 AI 智能體</div>
@@ -1092,6 +1131,7 @@
     const mobileNavToggle = document.getElementById("mobile-nav-toggle");
     const fullscreenChatSidebar = document.getElementById("fullscreen-chat-sidebar");
     const sidebarOverlay = document.getElementById("sidebar-overlay");
+    const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
 
     // 四階段設定
     const STEP_CONFIG = {
@@ -1341,6 +1381,14 @@
     function markdownToNaturalLanguage(text) {
       if (!text) return '';
       
+      // 先移除 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
+      text = text.replace(/_STRONGSTART_/gi, '');
+      text = text.replace(/_STRONGEND_/gi, '');
+      text = text.replace(/_STRONG_START_/gi, '');
+      text = text.replace(/_STRONG_END_/gi, '');
+      text = text.replace(/___STRONG_START___/gi, '');
+      text = text.replace(/___STRONG_END___/gi, '');
+      
       // 先轉義 HTML 特殊字符，避免 XSS
       const escapeHtml = (str) => {
         const div = document.createElement('div');
@@ -1354,14 +1402,31 @@
       text = text.replace(/`([^`\n]+)`/g, '$1');
       
       // 轉換粗體 **text** 或 __text__ → <strong>text</strong>（優先處理）
+      // 先處理 **text**（雙星號）
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      // 再處理 __text__（雙底線），但要避免匹配 HTML 標籤內的內容
+      text = text.replace(/__([^_]+)__/g, function(match, p1) {
+        // 如果不在 HTML 標籤內，才替換
+        if (!match.includes('<') && !match.includes('>')) {
+          return '<strong>' + p1 + '</strong>';
+        }
+        return match;
+      });
       
       // 轉換斜體 *text* 或 _text_ → <em>text</em>
       // 使用臨時標記避免與粗體衝突
       text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
+      // 處理單星號斜體（但要避免匹配已處理的粗體）
       text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-      text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+      // 處理單底線斜體（但要避免匹配已處理的標籤和粗體）
+      text = text.replace(/_([^_]+)_/g, function(match, p1) {
+        // 如果不在 HTML 標籤或臨時標記內，才替換
+        if (!match.includes('<') && !match.includes('>') && 
+            !match.includes('___STRONG_START___') && !match.includes('___STRONG_END___')) {
+          return '<em>' + p1 + '</em>';
+        }
+        return match;
+      });
       text = text.replace(/___STRONG_START___/g, '<strong>');
       text = text.replace(/___STRONG_END___/g, '</strong>');
       
@@ -1512,11 +1577,13 @@
           }
         }
 
+        // 使用流式輸出
         const res = await fetch(CHAT_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: contextMessages
+            messages: contextMessages,
+            stream: true
           })
         });
 
@@ -1524,22 +1591,54 @@
           throw new Error("HTTP 狀態碼 " + res.status);
         }
 
-        const data = await res.json();
-        let reply = data.reply || data.result || data.message || JSON.stringify(data);
-        
-        // 確保回覆是字串格式
-        if (typeof reply !== 'string') {
-          reply = JSON.stringify(reply, null, 2);
-        }
-
-        // 移除思考動畫，添加 AI 回覆
+        // 移除思考動畫，準備逐字顯示
         isThinking = false;
-        chatHistory.push({ role: "assistant", content: reply });
-        renderChat();
+        let fullReply = '';
+        chatHistory.push({ role: "assistant", content: "" });
+        
+        // 讀取流式回應
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.chunk) {
+                  fullReply += data.chunk;
+                  // 更新最後一條訊息並重新渲染
+                  chatHistory[chatHistory.length - 1].content = fullReply;
+                  renderChat();
+                } else if (data.done) {
+                  setChatStatus("已收到回覆");
+                  sendBtn.disabled = false;
+                  return;
+                } else if (data.error) {
+                  throw new Error(data.error);
+                }
+              } catch (parseErr) {
+                // 忽略解析錯誤，繼續處理下一行
+                console.warn('解析 SSE 數據失敗:', parseErr);
+              }
+            }
+          }
+        }
+        
         setChatStatus("已收到回覆");
       } catch (err) {
         console.error(err);
         isThinking = false;
+        // 如果已經添加了 assistant 訊息但出錯，移除它
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant' && !chatHistory[chatHistory.length - 1].content) {
+          chatHistory.pop();
+        }
         renderChat();
         setChatStatus("處理失敗：" + err.message);
       } finally {
@@ -1586,6 +1685,10 @@
         if (sidebarOverlay) {
           sidebarOverlay.classList.toggle("open", !isOpen);
         }
+        // 顯示/隱藏關閉按鈕
+        if (sidebarCloseBtn) {
+          sidebarCloseBtn.style.display = isOpen ? "none" : "flex";
+        }
       });
       
       // 點擊遮罩關閉側邊欄
@@ -1593,8 +1696,22 @@
         sidebarOverlay.addEventListener("click", () => {
           fullscreenChatSidebar.classList.remove("open");
           sidebarOverlay.classList.remove("open");
+          if (sidebarCloseBtn) {
+            sidebarCloseBtn.style.display = "none";
+          }
         });
       }
+    }
+
+    // 導航列關閉按鈕（只關閉導航列，不關閉對話）
+    if (sidebarCloseBtn) {
+      sidebarCloseBtn.addEventListener("click", () => {
+        fullscreenChatSidebar.classList.remove("open");
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove("open");
+        }
+        sidebarCloseBtn.style.display = "none";
+      });
     }
 
     // 全屏對話中的導航列：點擊後切換回四大功能

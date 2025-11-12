@@ -1,20 +1,21 @@
 import { Router, Request, Response } from 'express';
-import { generateChat } from '../services/llmClient';
+import { generateChat, generateChatStream } from '../services/llmClient';
 import { CHAT_SYSTEM_PROMPT } from '../services/prompts';
 
 const router = Router();
 
 interface ChatRequest {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  stream?: boolean; // 是否使用流式輸出
 }
 
 /**
  * POST /api/hr-chat
- * 和 AI 對話
+ * 和 AI 對話（支援流式輸出）
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { messages }: ChatRequest = req.body;
+    const { messages, stream = false }: ChatRequest = req.body;
 
     // 驗證輸入
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -31,12 +32,33 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    console.log(`[HR Chat] 收到 ${messages.length} 則訊息`);
+    console.log(`[HR Chat] 收到 ${messages.length} 則訊息，流式輸出: ${stream}`);
 
-    // 呼叫 LLM（帶上系統提示詞）
+    // 如果啟用流式輸出
+    if (stream) {
+      // 設定 SSE 標頭
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      try {
+        await generateChatStream(messages, CHAT_SYSTEM_PROMPT, (chunk) => {
+          // 發送每個文字塊
+          res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+        });
+
+        // 發送結束標記
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+      } catch (error) {
+        res.write(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : 'LLM 對話失敗' })}\n\n`);
+        res.end();
+      }
+      return;
+    }
+
+    // 非流式輸出（原有邏輯）
     const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT);
-
-    // 回傳結果
     res.json({ reply });
   } catch (error) {
     console.error('[HR Chat] 錯誤:', error);

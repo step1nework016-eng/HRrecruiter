@@ -1408,6 +1408,10 @@
       text = text.replace(/STRONGSTART/gi, '');
       text = text.replace(/STRONGEND/gi, '');
       
+      // 模式7: 額外清理，確保移除任何殘留的底線組合
+      // 例如：如果標記被部分移除後留下的底線
+      text = text.replace(/_{2,}/g, ''); // 移除多個連續的底線
+      
       // 先轉義 HTML 特殊字符，避免 XSS
       const escapeHtml = (str) => {
         const div = document.createElement('div');

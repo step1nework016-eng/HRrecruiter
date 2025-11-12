@@ -1402,6 +1402,9 @@
       // 這會匹配任何包含 STRONGSTART 或 STRONGEND 的標記，不管前後有什麼
       text = text.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
       text = text.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+      // 方法4: 最寬鬆的模式，直接移除關鍵字（確保不會遺漏）
+      text = text.replace(/STRONGSTART/gi, '');
+      text = text.replace(/STRONGEND/gi, '');
       
       // 先轉義 HTML 特殊字符，避免 XSS
       const escapeHtml = (str) => {

@@ -45,6 +45,16 @@ router.post('/', async (req: Request, res: Response) => {
     res.json({ id: artifact.id });
   } catch (error) {
     console.error('[HR Save] 錯誤:', error);
+    
+    // 如果是資料庫表不存在的錯誤，返回更友好的訊息
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      console.warn('[HR Save] 資料庫表不存在，請執行 migration: npx prisma db push');
+      return res.status(500).json({
+        error: '資料庫表不存在，請執行 migration',
+        details: '請在伺服器上執行: npx prisma db push 或 npx prisma migrate deploy'
+      });
+    }
+    
     res.status(500).json({
       error: error instanceof Error ? error.message : '儲存失敗',
     });

@@ -1426,6 +1426,15 @@
       // 模式7: 額外清理，確保移除任何殘留的底線組合
       cleaned = cleaned.replace(/_{2,}/g, ''); // 移除多個連續的底線
       
+      // 模式8: 最終檢查，使用更寬鬆的正則表達式匹配任何包含 STRONG 和 START/END 的組合
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
+      
+      // 模式9: 最後一次徹底清理
+      cleaned = cleaned.replace(/STRONG(START|END)/gi, '');
+      cleaned = cleaned.replace(/(START|END)STRONG/gi, '');
+      cleaned = cleaned.replace(/_{2,}/g, ''); // 再次移除多個連續的底線
+      
       return cleaned;
     }
 
@@ -1497,6 +1506,19 @@
       
       // 移除多餘的空白行
       text = text.replace(/(<br>\s*){3,}/g, '<br><br>');
+      
+      // ⭐ 最後再次清理所有可能的標記（包括 HTML 轉義後的標記）
+      // 這確保即使標記在轉義後仍然存在，也會被移除
+      // 處理 HTML 轉義後的標記（&lt; 和 &gt;）
+      text = text.replace(/&lt;\/?[^&gt;]*STRONG(START|END)[^&lt;&gt;]*&gt;/gi, '');
+      text = text.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
+      // 處理未轉義的標記
+      text = text.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
+      text = text.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
+      text = text.replace(/STRONG(START|END)/gi, '');
+      text = text.replace(/(START|END)STRONG/gi, '');
+      // 移除任何殘留的底線組合
+      text = text.replace(/_{2,}/g, '');
       
       return text.trim();
     }

@@ -1442,9 +1442,13 @@
     function markdownToNaturalLanguage(text) {
       if (!text) return '';
       
-      // 先移除 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
-      // 使用與後端相同的清理邏輯，確保所有變體都被移除
+      // ⭐ 第一步：徹底清理所有標記（在轉義 HTML 之前）
       text = cleanStrongMarkersFrontend(text);
+      
+      // 再次清理，確保沒有遺漏
+      text = text.replace(/[_\s]*STRONG(START|END)[_\s]*/gi, '');
+      text = text.replace(/STRONG(START|END)/gi, '');
+      text = text.replace(/_{2,}/g, '');
       
       // 先轉義 HTML 特殊字符，避免 XSS
       const escapeHtml = (str) => {
@@ -1454,6 +1458,11 @@
       };
       text = escapeHtml(text);
       
+      // ⭐ 第二步：轉義後再次清理（處理可能被轉義的標記）
+      text = text.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
+      text = text.replace(/[_\s]*STRONG(START|END)[_\s]*/gi, '');
+      text = text.replace(/STRONG(START|END)/gi, '');
+      
       // 移除代碼塊（多行和單行）
       text = text.replace(/```[\s\S]*?```/g, '');
       text = text.replace(/`([^`\n]+)`/g, '$1');
@@ -1461,8 +1470,12 @@
       // 轉換粗體 **text** 或 __text__ → <strong>text</strong>（優先處理）
       // 先處理 **text**（雙星號）
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      // 再處理 __text__（雙底線），但要避免匹配 HTML 標籤內的內容
+      // 再處理 __text__（雙底線），但要避免匹配包含 STRONGSTART/STRONGEND 的內容
       text = text.replace(/__([^_]+)__/g, function(match, p1) {
+        // 如果包含 STRONGSTART 或 STRONGEND，直接移除標記
+        if (match.toUpperCase().includes('STRONGSTART') || match.toUpperCase().includes('STRONGEND')) {
+          return '';
+        }
         // 如果不在 HTML 標籤內，才替換
         if (!match.includes('<') && !match.includes('>')) {
           return '<strong>' + p1 + '</strong>';
@@ -1475,8 +1488,12 @@
       text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
       // 處理單星號斜體（但要避免匹配已處理的粗體）
       text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-      // 處理單底線斜體（但要避免匹配已處理的標籤和粗體）
+      // 處理單底線斜體（但要避免匹配已處理的標籤和粗體，以及 STRONGSTART/STRONGEND）
       text = text.replace(/_([^_]+)_/g, function(match, p1) {
+        // 如果包含 STRONGSTART 或 STRONGEND，直接移除標記
+        if (match.toUpperCase().includes('STRONGSTART') || match.toUpperCase().includes('STRONGEND')) {
+          return '';
+        }
         // 如果不在 HTML 標籤或臨時標記內，才替換
         if (!match.includes('<') && !match.includes('>') && 
             !match.includes('___STRONG_START___') && !match.includes('___STRONG_END___')) {
@@ -1507,12 +1524,13 @@
       // 移除多餘的空白行
       text = text.replace(/(<br>\s*){3,}/g, '<br><br>');
       
-      // ⭐ 最後再次清理所有可能的標記（包括 HTML 轉義後的標記）
+      // ⭐ 第三步：最終清理所有可能的標記（包括 HTML 轉義後的標記）
       // 這確保即使標記在轉義後仍然存在，也會被移除
       // 處理 HTML 轉義後的標記（&lt; 和 &gt;）
       text = text.replace(/&lt;\/?[^&gt;]*STRONG(START|END)[^&lt;&gt;]*&gt;/gi, '');
       text = text.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
-      // 處理未轉義的標記
+      // 處理未轉義的標記（包括在 HTML 標籤內的）
+      text = text.replace(/<[^>]*STRONG(START|END)[^<]*>/gi, '');
       text = text.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
       text = text.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
       text = text.replace(/STRONG(START|END)/gi, '');

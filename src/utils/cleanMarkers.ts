@@ -46,6 +46,15 @@ export function cleanStrongMarkers(text: string): string {
   // 例如：如果標記被部分移除後留下的底線
   cleaned = cleaned.replace(/_{2,}/g, ''); // 移除多個連續的底線
   
+  // 模式8: 最終檢查，使用更寬鬆的正則表達式匹配任何包含 STRONG 和 START/END 的組合
+  cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
+  
+  // 模式9: 最後一次徹底清理
+  cleaned = cleaned.replace(/STRONG(START|END)/gi, '');
+  cleaned = cleaned.replace(/(START|END)STRONG/gi, '');
+  cleaned = cleaned.replace(/_{2,}/g, ''); // 再次移除多個連續的底線
+  
   // 記錄清理結果（僅在開發環境）
   if (process.env.NODE_ENV === 'development' && cleaned.length !== originalLength) {
     console.log(`[Clean Markers] 已清理 ${originalLength - cleaned.length} 個字符的標記`);

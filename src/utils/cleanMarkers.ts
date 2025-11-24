@@ -1,6 +1,63 @@
 /**
+ * 最終清理函數：徹底移除 STRONGSTART / STRONGEND 及所有變體（含 escape）
+ * 此函數必須在所有清理 pipeline 的最後調用，不得被其他 replace/sanitize 之後再改寫
+ */
+export function finalScrub(text: string): string {
+  if (!text) return text;
+  
+  let cleaned = text;
+  
+  // 處理 HTML 轉義後的標記（&lt;、&gt;、&amp; 等）
+  // 移除 HTML 實體中的標記
+  cleaned = cleaned.replace(/&lt;\/?[^&gt;]*STRONG(START|END)[^&lt;&gt;]*&gt;/gi, '');
+  cleaned = cleaned.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
+  cleaned = cleaned.replace(/&#[0-9]+;.*?STRONG(START|END).*?&#[0-9]+;/gi, '');
+  
+  // 處理 HTML 標籤內的標記
+  cleaned = cleaned.replace(/<[^>]*STRONG(START|END)[^<]*>/gi, '');
+  
+  // 處理所有未轉義的標記變體
+  // 最寬鬆的模式：直接移除關鍵字（優先執行）
+  cleaned = cleaned.replace(/STRONGSTART/gi, '');
+  cleaned = cleaned.replace(/STRONGEND/gi, '');
+  
+  // 匹配各種底線組合
+  cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
+  cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
+  cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
+  cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
+  cleaned = cleaned.replace(/_+STRONG\s+START_+/gi, '');
+  cleaned = cleaned.replace(/_+STRONG\s+END_+/gi, '');
+  
+  // 匹配任意數量的底線/空格組合
+  cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
+  cleaned = cleaned.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
+  
+  // 匹配組合變體
+  cleaned = cleaned.replace(/STRONG(START|END)/gi, '');
+  cleaned = cleaned.replace(/(START|END)STRONG/gi, '');
+  
+  // 移除殘留的多個連續底線
+  cleaned = cleaned.replace(/_{2,}/g, '');
+  
+  // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
+  if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
+    cleaned = cleaned.replace(/STRONGSTART/gi, '');
+    cleaned = cleaned.replace(/STRONGEND/gi, '');
+    cleaned = cleaned.replace(/_{2,}/g, '');
+  }
+  
+  return cleaned;
+}
+
+/**
  * 清理 LLM 輸出中的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
  * 這個函數會移除所有變體的標記
+ * @deprecated 請使用 finalScrub 作為最終清理步驟
  */
 export function cleanStrongMarkers(text: string): string {
   if (!text) return text;

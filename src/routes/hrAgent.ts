@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getPrompt } from '../services/prompts';
 import { generateText } from '../services/llmClient';
-import { cleanStrongMarkers } from '../utils/cleanMarkers';
+import { cleanStrongMarkers, finalScrub } from '../utils/cleanMarkers';
 
 const router = Router();
 
@@ -42,12 +42,15 @@ router.post('/', async (req: Request, res: Response) => {
 
     // 清理 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
     // 這個清理函數會處理所有四個功能（job_intake, sourcing, screening, interview）
-    const cleanedResponse = cleanStrongMarkers(rawResponse);
+    let cleanedResponse = cleanStrongMarkers(rawResponse);
     
     // 記錄清理前後的差異（僅在開發環境）
     if (process.env.NODE_ENV === 'development' && rawResponse !== cleanedResponse) {
       console.log(`[HR Agent] 已清理 ${step} 功能輸出中的標記`);
     }
+
+    // ⭐ 最終清理：必須在所有處理的最後調用
+    cleanedResponse = finalScrub(cleanedResponse);
 
     // 返回清理後的自然語言結果
     res.json({ result: cleanedResponse });

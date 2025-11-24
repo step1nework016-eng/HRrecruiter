@@ -1286,6 +1286,9 @@
           cleanedText = cleanStrongMarkersFrontend(cleanedText); // 再次清理
         }
         
+        // ⭐ 最終清理：必須在所有處理的最後調用（在傳給 markdownToNaturalLanguage 之前）
+        cleanedText = finalScrub(cleanedText);
+        
         // 使用 innerHTML 並轉換 markdown 格式（移除 ** 和 * 符號，轉為 HTML）
         outputPre.innerHTML = markdownToNaturalLanguage(cleanedText);
         setStatus("", "分析完成！");
@@ -1386,6 +1389,60 @@
     // === Chat 功能 ===
     let chatHistory = []; // { role: 'user' | 'assistant', content: string }
     let isThinking = false;
+
+    // 最終清理函數：徹底移除 STRONGSTART / STRONGEND 及所有變體（含 escape）
+    // 此函數必須在所有清理 pipeline 的最後調用，不得被其他 replace/sanitize 之後再改寫
+    function finalScrub(text) {
+      if (!text) return text;
+      
+      let cleaned = text;
+      
+      // 處理 HTML 轉義後的標記（&lt;、&gt;、&amp; 等）
+      // 移除 HTML 實體中的標記
+      cleaned = cleaned.replace(/&lt;\/?[^&gt;]*STRONG(START|END)[^&lt;&gt;]*&gt;/gi, '');
+      cleaned = cleaned.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
+      cleaned = cleaned.replace(/&#[0-9]+;.*?STRONG(START|END).*?&#[0-9]+;/gi, '');
+      
+      // 處理 HTML 標籤內的標記
+      cleaned = cleaned.replace(/<[^>]*STRONG(START|END)[^<]*>/gi, '');
+      
+      // 處理所有未轉義的標記變體
+      // 最寬鬆的模式：直接移除關鍵字（優先執行）
+      cleaned = cleaned.replace(/STRONGSTART/gi, '');
+      cleaned = cleaned.replace(/STRONGEND/gi, '');
+      
+      // 匹配各種底線組合
+      cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG\s+START_+/gi, '');
+      cleaned = cleaned.replace(/_+STRONG\s+END_+/gi, '');
+      
+      // 匹配任意數量的底線/空格組合
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
+      cleaned = cleaned.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
+      
+      // 匹配組合變體
+      cleaned = cleaned.replace(/STRONG(START|END)/gi, '');
+      cleaned = cleaned.replace(/(START|END)STRONG/gi, '');
+      
+      // 移除殘留的多個連續底線
+      cleaned = cleaned.replace(/_{2,}/g, '');
+      
+      // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
+      if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
+        cleaned = cleaned.replace(/STRONGSTART/gi, '');
+        cleaned = cleaned.replace(/STRONGEND/gi, '');
+        cleaned = cleaned.replace(/_{2,}/g, '');
+      }
+      
+      return cleaned;
+    }
 
     // 清理 LLM 輸出中的奇怪標記（與後端使用相同的邏輯）
     function cleanStrongMarkersFrontend(text) {
@@ -1524,19 +1581,8 @@
       // 移除多餘的空白行
       text = text.replace(/(<br>\s*){3,}/g, '<br><br>');
       
-      // ⭐ 第三步：最終清理所有可能的標記（包括 HTML 轉義後的標記）
-      // 這確保即使標記在轉義後仍然存在，也會被移除
-      // 處理 HTML 轉義後的標記（&lt; 和 &gt;）
-      text = text.replace(/&lt;\/?[^&gt;]*STRONG(START|END)[^&lt;&gt;]*&gt;/gi, '');
-      text = text.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
-      // 處理未轉義的標記（包括在 HTML 標籤內的）
-      text = text.replace(/<[^>]*STRONG(START|END)[^<]*>/gi, '');
-      text = text.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
-      text = text.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
-      text = text.replace(/STRONG(START|END)/gi, '');
-      text = text.replace(/(START|END)STRONG/gi, '');
-      // 移除任何殘留的底線組合
-      text = text.replace(/_{2,}/g, '');
+      // ⭐ 最終清理：必須在所有處理的最後調用，不得被其他 replace/sanitize 之後再改寫
+      text = finalScrub(text);
       
       return text.trim();
     }

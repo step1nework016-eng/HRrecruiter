@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { generateChat, generateChatStream } from '../services/llmClient';
 import { CHAT_SYSTEM_PROMPT } from '../services/prompts';
-import { cleanStrongMarkers } from '../utils/cleanMarkers';
+import { cleanStrongMarkers, finalScrub } from '../utils/cleanMarkers';
 
 const router = Router();
 
@@ -45,7 +45,9 @@ router.post('/', async (req: Request, res: Response) => {
       try {
         await generateChatStream(messages, CHAT_SYSTEM_PROMPT, (chunk) => {
           // 清理每個文字塊後再發送
-          const cleanedChunk = cleanStrongMarkers(chunk);
+          let cleanedChunk = cleanStrongMarkers(chunk);
+          // ⭐ 最終清理：必須在所有處理的最後調用
+          cleanedChunk = finalScrub(cleanedChunk);
           res.write(`data: ${JSON.stringify({ chunk: cleanedChunk })}\n\n`);
         });
 
@@ -63,7 +65,10 @@ router.post('/', async (req: Request, res: Response) => {
     const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT);
     
     // 清理 LLM 可能輸出的奇怪標記
-    const cleanedReply = cleanStrongMarkers(reply);
+    let cleanedReply = cleanStrongMarkers(reply);
+    
+    // ⭐ 最終清理：必須在所有處理的最後調用
+    cleanedReply = finalScrub(cleanedReply);
     
     res.json({ reply: cleanedReply });
   } catch (error) {

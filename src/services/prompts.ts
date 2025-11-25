@@ -6,6 +6,25 @@
 export type StepType = 'job_intake' | 'sourcing' | 'screening' | 'interview';
 
 /**
+ * ⚠️ 禁止提示詞（必須放在 System Prompt）
+ * 經實戰驗證有效的禁止提示詞
+ */
+export const FORBIDDEN_MARKERS_SYSTEM_PROMPT = `⚠️ 請注意：你在生成內容時，禁止使用任何以下字串：
+
+STRONGSTART、STRONG_END、STRONGEND、_STRONGSTART_ 等所有變體。
+
+你不得自行產生任何形式的強調符號、暫存標記、placeholder 或強調語法。
+
+你只能輸出純文字。不得使用：
+
+- Markdown（*, **, ___）
+- HTML 標籤（<strong> <b>）
+- Placeholder（STRONGSTART/END 類）
+- 自創的格式化 token
+
+若模型推理出需要強調，請改用自然語言描述，不要輸出任何符號或占位符。`;
+
+/**
  * 取得指定步驟的 Prompt
  */
 export function getPrompt(step: StepType, input: string, isRetry: boolean = false): string {
@@ -74,9 +93,7 @@ ${input}
 【加分項目】
 （列出加分但非必需的項目）
 
-請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容。
-
-重要：請不要使用任何特殊標記（如 _STRONGSTART_、_STRONGEND_、**、__ 等），直接使用純文字和中文標點符號即可。`;
+請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容。`;
 }
 
 /**
@@ -109,9 +126,7 @@ ${input}
 【目標受眾描述】
 （描述這個職缺的目標受眾特徵，幫助 HR 更精準地找到合適人才）
 
-請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容。
-
-重要：請不要使用任何特殊標記（如 _STRONGSTART_、_STRONGEND_、**、__ 等），直接使用純文字和中文標點符號即可。`;
+請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容。`;
 }
 
 /**
@@ -212,7 +227,9 @@ ${input}
 /**
  * Chat 功能的系統提示詞
  */
-export const CHAT_SYSTEM_PROMPT = `你是一位專門協助 HR 和招募顧問的 AI 助理。你的專長包括：
+export const CHAT_SYSTEM_PROMPT = `${FORBIDDEN_MARKERS_SYSTEM_PROMPT}
+
+你是一位專門協助 HR 和招募顧問的 AI 助理。你的專長包括：
 
 1. 職缺說明（JD）撰寫與優化
 2. 人才畫像設計
@@ -221,7 +238,5 @@ export const CHAT_SYSTEM_PROMPT = `你是一位專門協助 HR 和招募顧問�
 5. 履歷評估與篩選建議
 6. 面試評估與決策支援
 
-請以專業、友善、實用的方式回答問題，並提供具體可行的建議。如果使用者詢問的問題與招募相關，請盡量提供結構化的回答。
-
-重要：請不要使用任何特殊標記（如 _STRONGSTART_、_STRONGEND_、**、__ 等），直接使用純文字和中文標點符號即可。`;
+請以專業、友善、實用的方式回答問題，並提供具體可行的建議。如果使用者詢問的問題與招募相關，請盡量提供結構化的回答。`;
 

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FORBIDDEN_MARKERS_SYSTEM_PROMPT } from './prompts';
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -25,6 +26,7 @@ export async function generateText(
       // 使用 gemini-2.5-flash（根據您的配額儀表板，此模型可用）
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-2.5-flash',
+        systemInstruction: FORBIDDEN_MARKERS_SYSTEM_PROMPT,
         generationConfig: {
           temperature,
           topP: 0.95,
@@ -66,6 +68,7 @@ export async function generateText(
             console.log(`嘗試備用模型: ${fallbackModelName}`);
             const fallbackModel = genAI.getGenerativeModel({ 
               model: fallbackModelName,
+              systemInstruction: FORBIDDEN_MARKERS_SYSTEM_PROMPT,
               generationConfig: {
                 temperature,
                 topP: 0.95,
@@ -120,6 +123,7 @@ export async function generateChat(
       // 使用 gemini-2.5-flash（根據您的配額儀表板，此模型可用）
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-2.5-flash',
+        systemInstruction: systemPrompt || FORBIDDEN_MARKERS_SYSTEM_PROMPT,
         generationConfig: {
           temperature: 0.7,
           topP: 0.95,
@@ -128,11 +132,8 @@ export async function generateChat(
         },
       });
 
-      // 組合完整提示詞
+      // 組合完整提示詞（只包含對話訊息，不包含 system prompt）
       let fullPrompt = '';
-      if (systemPrompt) {
-        fullPrompt += `${systemPrompt}\n\n`;
-      }
 
       // 轉換訊息格式為 Gemini 可理解的格式
       messages.forEach((msg) => {
@@ -178,6 +179,7 @@ export async function generateChat(
             console.log(`嘗試備用模型: ${fallbackModelName}`);
             const fallbackModel = genAI.getGenerativeModel({ 
               model: fallbackModelName,
+              systemInstruction: systemPrompt || FORBIDDEN_MARKERS_SYSTEM_PROMPT,
               generationConfig: {
                 temperature: 0.7,
                 topP: 0.95,
@@ -185,11 +187,8 @@ export async function generateChat(
                 maxOutputTokens: 8192,
               },
             });
-            // 重新組合提示詞並調用
+            // 重新組合提示詞並調用（只包含對話訊息）
             let fullPrompt = '';
-            if (systemPrompt) {
-              fullPrompt += `${systemPrompt}\n\n`;
-            }
             messages.forEach((msg) => {
               if (msg.role === 'user') {
                 fullPrompt += `使用者：${msg.content}\n\n`;
@@ -248,6 +247,7 @@ export async function generateChatStream(
       // 使用 gemini-2.5-flash
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-2.5-flash',
+        systemInstruction: systemPrompt || FORBIDDEN_MARKERS_SYSTEM_PROMPT,
         generationConfig: {
           temperature: 0.7,
           topP: 0.95,
@@ -256,11 +256,8 @@ export async function generateChatStream(
         },
       });
 
-      // 組合完整提示詞
+      // 組合完整提示詞（只包含對話訊息，不包含 system prompt）
       let fullPrompt = '';
-      if (systemPrompt) {
-        fullPrompt += `${systemPrompt}\n\n`;
-      }
 
       // 轉換訊息格式為 Gemini 可理解的格式
       messages.forEach((msg) => {
@@ -313,6 +310,7 @@ export async function generateChatStream(
               console.log(`嘗試備用模型: ${fallbackModelName}`);
               const fallbackModel = genAI.getGenerativeModel({ 
                 model: fallbackModelName,
+                systemInstruction: systemPrompt || FORBIDDEN_MARKERS_SYSTEM_PROMPT,
                 generationConfig: {
                   temperature: 0.7,
                   topP: 0.95,
@@ -321,11 +319,8 @@ export async function generateChatStream(
                 },
               });
               
-              // 重新組合提示詞並調用
+              // 重新組合提示詞並調用（只包含對話訊息）
               let fullPrompt = '';
-              if (systemPrompt) {
-                fullPrompt += `${systemPrompt}\n\n`;
-              }
               messages.forEach((msg) => {
                 if (msg.role === 'user') {
                   fullPrompt += `使用者：${msg.content}\n\n`;

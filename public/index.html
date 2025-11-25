@@ -1403,21 +1403,28 @@
       cleaned = cleaned.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
       cleaned = cleaned.replace(/&#[0-9]+;.*?STRONG(START|END).*?&#[0-9]+;/gi, '');
       
-      // 處理 HTML 標籤內的標記
+      // 處理 HTML 標籤內的標記（包括在 <strong>、<em> 等標籤內）
       cleaned = cleaned.replace(/<[^>]*STRONG(START|END)[^<]*>/gi, '');
+      
+      // ⭐ 新增：處理可能被 HTML 標籤包圍的標記
+      cleaned = cleaned.replace(/<[^>]*>.*?STRONG(START|END).*?<\/[^>]*>/gi, '');
       
       // 處理所有未轉義的標記變體
       // 最寬鬆的模式：直接移除關鍵字（優先執行）
       cleaned = cleaned.replace(/STRONGSTART/gi, '');
       cleaned = cleaned.replace(/STRONGEND/gi, '');
       
-      // 匹配各種底線組合
+      // 匹配各種底線組合（包括在文字中間的情況）
       cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
       cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
       cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
       cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
       cleaned = cleaned.replace(/_+STRONG\s+START_+/gi, '');
       cleaned = cleaned.replace(/_+STRONG\s+END_+/gi, '');
+      
+      // ⭐ 新增：處理可能沒有完整包圍的標記（如 _STRONGSTART 或 STRONGEND_）
+      cleaned = cleaned.replace(/_+STRONG(START|END)/gi, '');
+      cleaned = cleaned.replace(/STRONG(START|END)_+/gi, '');
       
       // 匹配任意數量的底線/空格組合
       cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
@@ -1434,11 +1441,20 @@
       // 移除殘留的多個連續底線
       cleaned = cleaned.replace(/_{2,}/g, '');
       
+      // ⭐ 新增：移除可能殘留的單個底線（如果標記被部分移除）
+      // 但要注意不要移除正常的單個底線（如變數名），只移除孤立的底線
+      cleaned = cleaned.replace(/\s_+\s/g, ' '); // 移除被空格包圍的底線
+      cleaned = cleaned.replace(/^_+\s/g, ''); // 移除開頭的底線
+      cleaned = cleaned.replace(/\s_+$/g, ''); // 移除結尾的底線
+      
       // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
       if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
         cleaned = cleaned.replace(/STRONGSTART/gi, '');
         cleaned = cleaned.replace(/STRONGEND/gi, '');
         cleaned = cleaned.replace(/_{2,}/g, '');
+        cleaned = cleaned.replace(/\s_+\s/g, ' ');
+        cleaned = cleaned.replace(/^_+\s/g, '');
+        cleaned = cleaned.replace(/\s_+$/g, '');
       }
       
       return cleaned;
@@ -1499,10 +1515,11 @@
     function markdownToNaturalLanguage(text) {
       if (!text) return '';
       
-      // ⭐ 第一步：徹底清理所有標記（在轉義 HTML 之前）
-      text = cleanStrongMarkersFrontend(text);
+      // ⭐ 第一步：在處理任何內容之前，先徹底清理所有標記
+      text = finalScrub(text);
       
-      // 再次清理，確保沒有遺漏
+      // ⭐ 第二步：再次清理，確保沒有遺漏
+      text = cleanStrongMarkersFrontend(text);
       text = text.replace(/[_\s]*STRONG(START|END)[_\s]*/gi, '');
       text = text.replace(/STRONG(START|END)/gi, '');
       text = text.replace(/_{2,}/g, '');
@@ -1515,10 +1532,8 @@
       };
       text = escapeHtml(text);
       
-      // ⭐ 第二步：轉義後再次清理（處理可能被轉義的標記）
-      text = text.replace(/&amp;[^;]*STRONG(START|END)[^;]*;/gi, '');
-      text = text.replace(/[_\s]*STRONG(START|END)[_\s]*/gi, '');
-      text = text.replace(/STRONG(START|END)/gi, '');
+      // ⭐ 第三步：轉義後再次清理（處理可能被轉義的標記）
+      text = finalScrub(text);
       
       // 移除代碼塊（多行和單行）
       text = text.replace(/```[\s\S]*?```/g, '');
@@ -1527,6 +1542,9 @@
       // 轉換粗體 **text** 或 __text__ → <strong>text</strong>（優先處理）
       // 先處理 **text**（雙星號）
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      // ⭐ 重要：先檢查並移除包含標記的雙底線內容，再處理正常的 markdown
+      text = text.replace(/__[^_]*STRONG(START|END)[^_]*__/gi, '');
       // 再處理 __text__（雙底線），但要避免匹配包含 STRONGSTART/STRONGEND 的內容
       text = text.replace(/__([^_]+)__/g, function(match, p1) {
         // 如果包含 STRONGSTART 或 STRONGEND，直接移除標記
@@ -1545,6 +1563,9 @@
       text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
       // 處理單星號斜體（但要避免匹配已處理的粗體）
       text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      
+      // ⭐ 重要：先移除包含標記的單底線內容，再處理正常的 markdown
+      text = text.replace(/_[^_]*STRONG(START|END)[^_]*_/gi, '');
       // 處理單底線斜體（但要避免匹配已處理的標籤和粗體，以及 STRONGSTART/STRONGEND）
       text = text.replace(/_([^_]+)_/g, function(match, p1) {
         // 如果包含 STRONGSTART 或 STRONGEND，直接移除標記
@@ -1581,7 +1602,7 @@
       // 移除多餘的空白行
       text = text.replace(/(<br>\s*){3,}/g, '<br><br>');
       
-      // ⭐ 最終清理：必須在所有處理的最後調用，不得被其他 replace/sanitize 之後再改寫
+      // ⭐ 第四步：最終清理：必須在所有處理的最後調用，不得被其他 replace/sanitize 之後再改寫
       text = finalScrub(text);
       
       return text.trim();

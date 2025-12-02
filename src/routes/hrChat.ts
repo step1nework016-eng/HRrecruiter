@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { generateChat, generateChatStream } from '../services/llmClient';
-import { CHAT_SYSTEM_PROMPT } from '../services/prompts';
+import { getChatSystemPrompt } from '../services/prompts';
 import { cleanStrongMarkers, finalScrub } from '../utils/cleanMarkers';
 
 const router = Router();
@@ -8,7 +8,11 @@ const router = Router();
 interface ChatRequest {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   stream?: boolean; // 是否使用流式輸出
-  apiKey?: string;
+  apiKey?: string; // Gemini Key
+  provider?: 'gemini' | 'openai';
+  openaiKey?: string;
+  language?: string;
+  customInstruction?: string;
 }
 
 /**
@@ -17,7 +21,7 @@ interface ChatRequest {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { messages, stream = false, apiKey }: ChatRequest = req.body;
+    const { messages, stream = false, apiKey, provider, openaiKey, language, customInstruction }: ChatRequest = req.body;
 
     // 驗證輸入
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -34,7 +38,9 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    console.log(`[HR Chat] 收到 ${messages.length} 則訊息，流式輸出: ${stream}`);
+    console.log(`[HR Chat] 收到 ${messages.length} 則訊息，流式輸出: ${stream}, 語言: ${language || 'zh-TW'}`);
+
+    const systemPrompt = getChatSystemPrompt(language, customInstruction);
 
     // 如果啟用流式輸出
     if (stream) {
@@ -44,13 +50,13 @@ router.post('/', async (req: Request, res: Response) => {
       res.setHeader('Connection', 'keep-alive');
 
       try {
-        await generateChatStream(messages, CHAT_SYSTEM_PROMPT, (chunk) => {
+        await generateChatStream(messages, systemPrompt, (chunk) => {
           // 清理每個文字塊後再發送
           let cleanedChunk = cleanStrongMarkers(chunk);
           // ⭐ 最終清理：必須在所有處理的最後調用
           cleanedChunk = finalScrub(cleanedChunk);
           res.write(`data: ${JSON.stringify({ chunk: cleanedChunk })}\n\n`);
-        }, apiKey);
+        }, apiKey, provider, openaiKey);
 
         // 發送結束標記
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
@@ -63,7 +69,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // 非流式輸出（原有邏輯）
-    const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT, apiKey);
+    const reply = await generateChat(messages, systemPrompt, apiKey, provider, openaiKey);
     
     // 清理 LLM 可能輸出的奇怪標記
     let cleanedReply = cleanStrongMarkers(reply);

@@ -9,20 +9,12 @@ export type StepType = 'job_intake' | 'sourcing' | 'screening' | 'interview';
  * ⚠️ 禁止提示詞（必須放在 System Prompt）
  * 經實戰驗證有效的禁止提示詞
  */
-export const FORBIDDEN_MARKERS_SYSTEM_PROMPT = `⚠️ 請注意：你在生成內容時，禁止使用任何以下字串：
-
-STRONGSTART、STRONG_END、STRONGEND、_STRONGSTART_ 等所有變體。
-
-你不得自行產生任何形式的強調符號、暫存標記、placeholder 或強調語法。
-
-你只能輸出純文字。不得使用：
-
-- Markdown（*, **, ___）
-- HTML 標籤（<strong> <b>）
-- Placeholder（STRONGSTART/END 類）
-- 自創的格式化 token
-
-若模型推理出需要強調，請改用自然語言描述，不要輸出任何符號或占位符。`;
+export const FORBIDDEN_MARKERS_SYSTEM_PROMPT = `⚠️ Important Instruction:
+You must output PLAIN TEXT only.
+Do NOT use any custom tagging, internal markers, or special formatting syntax.
+Do NOT use any placeholders like START/END tags.
+Use standard Markdown for formatting if needed (e.g. **bold**, - list), but prefer natural language.
+Never output internal placeholder text or debug markers.`;
 
 /**
  * 取得指定步驟的 Prompt
@@ -192,7 +184,7 @@ ${input}
 
 請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容進行決策。
 
-重要：請不要使用任何特殊標記（如 _STRONGSTART_、_STRONGEND_、**、__ 等），直接使用純文字和中文標點符號即可。`;
+重要：請不要使用任何特殊標記或強調語法，直接使用純文字和中文標點符號即可。`;
 }
 
 /**
@@ -243,7 +235,7 @@ ${input}
 
 請用清晰、專業的自然語言撰寫，讓 HR 可以直接使用這些內容進行決策。
 
-重要：請不要使用任何特殊標記（如 _STRONGSTART_、_STRONGEND_、**、__ 等），直接使用純文字和中文標點符號即可。`;
+重要：請不要使用任何特殊標記或強調語法，直接使用純文字和中文標點符號即可。`;
 }
 
 /**

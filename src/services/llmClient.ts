@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FORBIDDEN_MARKERS_SYSTEM_PROMPT } from './prompts';
+import { finalScrub } from '../utils/cleanMarkers';
 
 const defaultApiKey = process.env.GEMINI_API_KEY;
 const defaultGenAI = defaultApiKey ? new GoogleGenerativeAI(defaultApiKey) : null;
@@ -71,7 +72,7 @@ export async function generateText(
       }
       
       const data = await response.json() as any;
-      return data.choices[0]?.message?.content || '';
+      return finalScrub(data.choices[0]?.message?.content || '');
     } catch (error) {
       console.error('OpenAI API Error:', error);
       throw error;
@@ -99,7 +100,7 @@ export async function generateText(
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      return response.text();
+      return finalScrub(response.text());
     } catch (error) {
       console.error(`Gemini API 錯誤詳情 (嘗試 ${attempt}/${maxRetries}):`, error);
       if (error instanceof Error) {
@@ -134,7 +135,7 @@ export async function generateText(
               const result = await fallbackModel.generateContent(prompt);
               const response = await result.response;
               console.log(`✅ 備用模型 ${fallbackModelName} 成功`);
-              return response.text();
+              return finalScrub(response.text());
             } catch (fallbackError) {
               continue;
             }
@@ -181,7 +182,7 @@ export async function generateChat(
       throw new Error(`OpenAI API Error: ${err}`);
     }
     const data = await response.json() as any;
-    return data.choices[0]?.message?.content || '';
+    return finalScrub(data.choices[0]?.message?.content || '');
   }
 
   // === Gemini 邏輯 (原有) ===
@@ -213,7 +214,7 @@ export async function generateChat(
 
       const result = await model.generateContent(fullPrompt);
       const response = await result.response;
-      return response.text();
+      return finalScrub(response.text());
     } catch (error) {
       // 簡化錯誤處理 (與 generateText 類似)
       if (attempt === maxRetries) throw error;

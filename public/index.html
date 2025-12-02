@@ -963,7 +963,13 @@
       color: #166534;
     }
 
-    /* Skeleton Loading */
+      /* 強制禁止斜體 */
+      em, i {
+        font-style: normal !important;
+        font-weight: 600; /* 改用粗體代替斜體，或者直接正常顯示 */
+      }
+
+      /* Skeleton Loading */
     .skeleton {
       animation: skeleton-loading 1s linear infinite alternate;
       width: 100%;
@@ -980,6 +986,38 @@
     @keyframes skeleton-loading {
       0% { background-color: #f3f4f6; }
       100% { background-color: #e5e7eb; }
+    }
+
+    /* Loading Animation */
+    .ai-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--accent);
+      gap: 16px;
+    }
+    .ai-loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .ai-loading-text {
+      font-size: 14px;
+      font-weight: 500;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
     }
 
     /* Mobile Bottom Navigation */
@@ -1173,9 +1211,7 @@
           <div class="main-header">
             <div class="main-title-wrap">
               <div class="main-title" id="main-title">① 職缺需求（Job Intake）</div>
-              <div class="main-subtitle" id="main-subtitle">
-                HR 貼上職缺說明（JD） → AI 自動生成人才畫像與結構化欄位
-              </div>
+              <div class="main-subtitle" id="main-subtitle" style="display: none;"></div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <div class="badge-ai">
@@ -1191,8 +1227,7 @@
             <div>
               <h4>輸入（HR 貼上內容）</h4>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <p class="hint" id="input-hint" style="margin-bottom: 0;">
-                  目前步驟：職缺需求（Job Intake）。請貼上完整 JD。
+                <p class="hint" id="input-hint" style="margin-bottom: 0; display: none;">
                 </p>
                 <div style="position: relative;">
                   <input type="file" id="file-upload" style="display: none;" accept=".txt,.pdf,.docx,.doc">
@@ -1201,12 +1236,7 @@
                   </button>
                 </div>
               </div>
-              <textarea id="input-text" spellcheck="false">職缺：短影音剪輯師
-
-我們是一間專門做 AI、短影音教學的公司，正在找一位全職短影音剪輯師，負責 TikTok、Reels、YouTube Shorts 的剪輯。
-需要熟悉剪映或 Premiere，會做字幕、音樂節奏、轉場，懂一點社群感的節奏，知道什麼畫面容易吸引觀眾滑停。
-需具備 1–3 年剪輯經驗，有作品集，能配合 remote 團隊溝通。
-加分：有拍攝經驗、懂腳本節奏、會基本的縮圖設計。</textarea>
+              <textarea id="input-text" spellcheck="false" placeholder="請在此貼上職缺說明或相關內容..."></textarea>
 
               <div class="toolbar">
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1232,14 +1262,13 @@
             <div>
               <h4>AI 回傳結果</h4>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <p class="hint" style="margin-bottom: 0;">
-                  AI 分析結果將顯示在這裡
+                <p class="hint" style="margin-bottom: 0; display: none;">
                 </p>
                 <button class="btn-settings" id="btn-export-pdf" style="margin-top: 0; padding: 4px 10px; font-size: 11px; width: auto; display: none;">
                   📥 匯出 PDF
                 </button>
               </div>
-              <pre id="output-pre">點「開始 AI 分析」後會顯示結果</pre>
+              <pre id="output-pre" style="min-height: 200px; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">點「開始 AI 分析」後會顯示結果</pre>
             </div>
           </div>
 
@@ -1803,19 +1832,18 @@
       cleaned = cleaned.replace(/_{2,}/g, '');
       
       // ⭐ 新增：移除可能殘留的單個底線（如果標記被部分移除）
-      // 但要注意不要移除正常的單個底線（如變數名），只移除孤立的底線
-      cleaned = cleaned.replace(/\s_+\s/g, ' '); // 移除被空格包圍的底線
-      cleaned = cleaned.replace(/^_+\s/g, ''); // 移除開頭的底線
-      cleaned = cleaned.replace(/\s_+$/g, ''); // 移除結尾的底線
+      // 但保留普通的單底線（如 snake_case）
+      // 移除開頭或結尾的底線
+      cleaned = cleaned.replace(/^_+\s*/, '');
+      cleaned = cleaned.replace(/\s*_+$/, '');
+      // 移除被空格包圍的底線
+      cleaned = cleaned.replace(/\s+_\s+/g, ' ');
       
       // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
       if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
         cleaned = cleaned.replace(/STRONGSTART/gi, '');
         cleaned = cleaned.replace(/STRONGEND/gi, '');
         cleaned = cleaned.replace(/_{2,}/g, '');
-        cleaned = cleaned.replace(/\s_+\s/g, ' ');
-        cleaned = cleaned.replace(/^_+\s/g, '');
-        cleaned = cleaned.replace(/\s_+$/g, '');
       }
       
       return cleaned;
@@ -1919,29 +1947,18 @@
         return match;
       });
       
-      // 轉換斜體 *text* 或 _text_ → <em>text</em>
-      // 使用臨時標記避免與粗體衝突
-      text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
-      // 處理單星號斜體（但要避免匹配已處理的粗體）
-      text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      // ⛔️ 禁用斜體：將 *text* 或 _text_ 直接顯示為文字（或只保留文字，不加標籤）
+      // 原本邏輯：text = text.replace(/<strong>([^<]+)<\/strong>/g, '___STRONG_START___$1___STRONG_END___');
+      // 禁用斜體後，只需處理 * 或 _ 的移除（如果用戶是用 markdown 語法），或者保留原樣
       
-      // ⭐ 重要：先移除包含標記的單底線內容，再處理正常的 markdown
-      text = text.replace(/_[^_]*STRONG(START|END)[^_]*_/gi, '');
-      // 處理單底線斜體（但要避免匹配已處理的標籤和粗體，以及 STRONGSTART/STRONGEND）
-      text = text.replace(/_([^_]+)_/g, function(match, p1) {
-        // 如果包含 STRONGSTART 或 STRONGEND，直接移除標記
-        if (match.toUpperCase().includes('STRONGSTART') || match.toUpperCase().includes('STRONGEND')) {
-          return '';
-        }
-        // 如果不在 HTML 標籤或臨時標記內，才替換
-        if (!match.includes('<') && !match.includes('>') && 
-            !match.includes('___STRONG_START___') && !match.includes('___STRONG_END___')) {
-          return '<em>' + p1 + '</em>';
-        }
-        return match;
-      });
-      text = text.replace(/___STRONG_START___/g, '<strong>');
-      text = text.replace(/___STRONG_END___/g, '</strong>');
+      // 為了避免 * 或 _ 被誤認為斜體，我們將其視為普通字符，或者移除 markdown 標記符號
+      // 處理單星號斜體：*text* -> text
+      text = text.replace(/\*([^*]+)\*/g, '$1');
+      
+      // 處理單底線斜體：_text_ -> text (如果有 STRONGSTART 已經被上面清理過了)
+      // 但要小心不要把 snake_case 變量名破壞掉
+      // 只有當 _ 前後是邊界時才處理
+      text = text.replace(/(^|[^a-zA-Z0-9])_([^_]+)_(?=[^a-zA-Z0-9]|$)/g, '$1$2');
       
       // 移除列表標記（-、*、數字），但保留內容
       text = text.replace(/^[\s]*[-*•]\s+/gm, '');
@@ -2461,7 +2478,43 @@
           if (!res.ok) throw new Error('檔案讀取失敗');
           
           const data = await res.json();
-          inputText.value = data.text;
+          
+          // 針對不同步驟做優化處理
+          if (currentStep === '3') { // Screening: 職缺 + 履歷
+            const currentVal = inputText.value.trim();
+            
+            // 簡單判斷當前內容是 JD 還是履歷，或是已經包含了兩者
+            const hasSeparator = currentVal.includes('---');
+            
+            if (currentVal && !hasSeparator) {
+              // 假設現有內容是 JD，新上傳的是履歷（或是反過來）
+              // 為了方便用戶，我們直接附加並加上分隔符
+              inputText.value = currentVal + "\n\n---\n\n" + data.text;
+              alert('已將檔案內容附加到現有文字後方，並以分隔線區隔。');
+            } else if (hasSeparator) {
+              // 已經有分隔符，詢問要附加在哪一部分
+               if (confirm('偵測到已有分隔內容。點擊「確定」附加到最後，點擊「取消」覆蓋全部。')) {
+                  inputText.value = inputText.value + "\n\n" + data.text;
+               } else {
+                  inputText.value = data.text;
+               }
+            } else {
+              // 空的，直接填入
+              inputText.value = data.text;
+            }
+          } else {
+            // 其他步驟：預設取代（例如 Step 1 上傳會議記錄）
+            // 但為了防呆，如果已經有內容，詢問是否覆蓋
+            if (inputText.value.trim().length > 0) {
+              if (confirm('要覆蓋現有的內容嗎？\n點擊「確定」覆蓋，點擊「取消」則附加到後方。')) {
+                inputText.value = data.text;
+              } else {
+                inputText.value = inputText.value + "\n\n" + data.text;
+              }
+            } else {
+              inputText.value = data.text;
+            }
+          }
         } catch (error) {
           console.error(error);
           alert('檔案讀取失敗，請確認檔案格式是否正確');

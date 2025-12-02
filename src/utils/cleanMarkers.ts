@@ -44,6 +44,10 @@ export function finalScrub(text: string): string {
   // 移除殘留的多個連續底線
   cleaned = cleaned.replace(/_{2,}/g, '');
   
+  // 模式 X: 核彈級正則表達式，匹配所有可能的組合
+  cleaned = cleaned.replace(/[_*\s]*STRONG[_\s]*(START|END)[_*\s]*/gi, '');
+  cleaned = cleaned.replace(/[_*\s]*(START|END)[_\s]*STRONG[_*\s]*/gi, '');
+
   // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
   if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
     cleaned = cleaned.replace(/STRONGSTART/gi, '');

@@ -1795,34 +1795,9 @@
       // ⭐ 新增：處理可能被 HTML 標籤包圍的標記
       cleaned = cleaned.replace(/<[^>]*>.*?STRONG(START|END).*?<\/[^>]*>/gi, '');
       
-      // 處理所有未轉義的標記變體
-      // 最寬鬆的模式：直接移除關鍵字（優先執行）
-      cleaned = cleaned.replace(/STRONGSTART/gi, '');
-      cleaned = cleaned.replace(/STRONGEND/gi, '');
-      
-      // 匹配各種底線組合（包括在文字中間的情況）
-      cleaned = cleaned.replace(/_+STRONGSTART_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONGEND_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG_START_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG_END_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG\s+START_+/gi, '');
-      cleaned = cleaned.replace(/_+STRONG\s+END_+/gi, '');
-      
-      // ⭐ 新增：處理可能沒有完整包圍的標記（如 _STRONGSTART 或 STRONGEND_）
-      cleaned = cleaned.replace(/_+STRONG(START|END)/gi, '');
-      cleaned = cleaned.replace(/STRONG(START|END)_+/gi, '');
-      
-      // 匹配任意數量的底線/空格組合
-      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*START[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*END[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONGSTART[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONGEND[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*STRONG[_\s]*(START|END)[_\s]*/gi, '');
-      cleaned = cleaned.replace(/[_\s]*(START|END)[_\s]*STRONG[_\s]*/gi, '');
-      
-      // 匹配組合變體
-      cleaned = cleaned.replace(/STRONG(START|END)/gi, '');
-      cleaned = cleaned.replace(/(START|END)STRONG/gi, '');
+      // 核彈級正則表達式，匹配所有可能的組合
+      cleaned = cleaned.replace(/[_*\s]*STRONG[_\s]*(START|END)[_*\s]*/gi, '');
+      cleaned = cleaned.replace(/[_*\s]*(START|END)[_\s]*STRONG[_*\s]*/gi, '');
       
       // 移除殘留的多個連續底線
       cleaned = cleaned.replace(/_{2,}/g, '');

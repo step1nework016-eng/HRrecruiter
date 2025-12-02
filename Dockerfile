@@ -10,10 +10,13 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# 安裝所有依賴（包含 devDependencies 以進行編譯）
 RUN npm install --include=dev
 COPY . .
 
+# 生成 Prisma Client
 RUN npx prisma generate
+# 編譯 TS
 RUN npm run build
 
 
@@ -30,23 +33,22 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 安裝 production 依賴（包含 @prisma/client）
+# 安裝 production 依賴（包含 @prisma/client, multer, pdf-parse, mammoth 等）
+# 注意：pdf-parse 可能需要開發依賴中的某些編譯工具，但通常純 JS 依賴即可
 RUN npm install --omit=dev
 
 # ⭐ 關鍵：安裝 prisma CLI 來生成客戶端
 # 保留 prisma CLI（不移除），因為之後可能需要運行 migration
 RUN npm install prisma --save-dev
 
-# 生成 Prisma 客戶端（必須在 runtime 階段生成，因為它依賴於當前的 node_modules 結構）
-# 注意：prisma generate 不需要 DATABASE_URL，只需要 schema 文件
+# 生成 Prisma 客戶端
 RUN npx prisma generate
 
-# 複製編譯後的代碼（必須在生成 Prisma 客戶端之後）
+# 複製編譯後的代碼
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-# 修改：在啟動時執行 db push，確保 Schema 同步
-# 使用 sh -c 來執行多個指令
+# 啟動命令：先同步 DB Schema 再啟動 Server
 CMD ["sh", "-c", "prisma db push --skip-generate && node dist/index.js"]

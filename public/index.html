@@ -835,6 +835,96 @@
         transform: scale(1.2);
       }
     }
+
+    /* 設定按鈕樣式 */
+    .btn-settings {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-soft);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-settings:hover {
+      background: #f9fafb;
+      color: var(--text-main);
+      border-color: #d1d5db;
+    }
+    .btn-settings.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #f0f9ff;
+    }
+
+    /* 模態視窗 (Modal) 優化 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px); /* 磨砂玻璃效果 */
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-card {
+      background: #fff;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-overlay.open .modal-card {
+      transform: scale(1);
+    }
+    .input-group {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+    .key-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: #f3f4f6;
+      color: var(--text-soft);
+    }
+    .key-status-badge.active {
+      background: #dcfce7;
+      color: #166534;
+    }
   </style>
 </head>
 <body>
@@ -886,7 +976,14 @@
         <button class="btn-enter-chat" id="sidebar-enter-chat-btn" style="width: 100%; margin-bottom: 8px;">
           💬 進入 AI 對話
         </button>
-        <div style="font-size: 11px; color: var(--text-soft); line-height: 1.5;">
+        
+        <!-- 新增設定按鈕 -->
+        <button class="btn-settings" id="btn-open-settings">
+          <span id="settings-icon">⚙️</span> 
+          <span id="settings-text">設定 API Key</span>
+        </button>
+
+        <div style="font-size: 11px; color: var(--text-soft); line-height: 1.5; margin-top: 12px;">
           手機版：點上面的功能，<br />
           會打開全螢幕生成頁，按「✕」後關閉。
         </div>
@@ -1071,6 +1168,37 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 700;">API Key 設定</h3>
+        <div class="key-status-badge" id="key-status-badge">
+          <span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span>
+          使用預設 Key
+        </div>
+      </div>
+      
+      <p style="font-size: 13px; color: var(--text-soft); margin-bottom: 20px; line-height: 1.6;">
+        輸入您個人的 Google Gemini API Key 以獲得更穩定的體驗。<br>
+        <span style="font-size: 12px; opacity: 0.8;">🔒 金鑰僅儲存於您的瀏覽器 (LocalStorage)，不會外洩。</span>
+      </p>
+
+      <div class="input-group">
+        <input type="password" id="api-key-input" class="input-field" placeholder="貼上 API Key (以 AIza 開頭...)" autocomplete="off">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-settings" id="btn-clear-key" style="width: auto; color: #ef4444; border-color: #fee2e2; display: none;">
+          移除金鑰
+        </button>
+        <div style="flex: 1;"></div>
+        <button class="btn-settings" id="btn-cancel-settings" style="width: auto; margin-top: 0;">取消</button>
+        <button class="btn-primary" id="btn-save-settings" style="box-shadow: none;">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // === 歡迎動畫控制 ===
     (function() {
@@ -1251,7 +1379,8 @@
           body: JSON.stringify({
             step: conf.stepKey,
             input: text,
-            mode: isRetry ? "retry" : "normal"
+            mode: isRetry ? "retry" : "normal",
+            apiKey: localStorage.getItem('hr_custom_api_key') || undefined
           })
         });
 
@@ -1738,7 +1867,8 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: contextMessages,
-            stream: true
+            stream: true,
+            apiKey: localStorage.getItem('hr_custom_api_key') || undefined
           })
         });
 
@@ -1898,6 +2028,92 @@
 
     // 初始化 chat 畫面
     renderChat();
+
+    // === UI/UX: API Key 管理邏輯 ===
+    (function() {
+      const modal = document.getElementById('settings-modal');
+      const openBtn = document.getElementById('btn-open-settings');
+      const cancelBtn = document.getElementById('btn-cancel-settings');
+      const saveBtn = document.getElementById('btn-save-settings');
+      const clearBtn = document.getElementById('btn-clear-key');
+      const input = document.getElementById('api-key-input');
+      const badge = document.getElementById('key-status-badge');
+      const settingsText = document.getElementById('settings-text');
+      const settingsBtn = document.getElementById('btn-open-settings');
+
+      // 讀取 Key
+      function getCustomApiKey() {
+        return localStorage.getItem('hr_custom_api_key') || '';
+      }
+
+      // 更新 UI 狀態
+      function updateUIState() {
+        const key = getCustomApiKey();
+        if (key) {
+          badge.classList.add('active');
+          badge.innerHTML = '<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 使用自定義 Key';
+          clearBtn.style.display = 'flex';
+          settingsBtn.classList.add('active');
+          settingsText.textContent = '已設定 API Key';
+        } else {
+          badge.classList.remove('active');
+          badge.innerHTML = '<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 使用系統預設';
+          clearBtn.style.display = 'none';
+          settingsBtn.classList.remove('active');
+          settingsText.textContent = '設定 API Key';
+        }
+      }
+
+      // 開啟 Modal
+      openBtn.addEventListener('click', () => {
+        input.value = getCustomApiKey(); // 預填目前的 Key
+        modal.classList.add('open');
+        input.focus();
+      });
+
+      // 關閉 Modal
+      function closeModal() {
+        modal.classList.remove('open');
+      }
+      cancelBtn.addEventListener('click', closeModal);
+      
+      // 點擊遮罩關閉
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      // 儲存 Key (含簡單驗證)
+      saveBtn.addEventListener('click', () => {
+        const val = input.value.trim();
+        if (!val) {
+          closeModal();
+          return;
+        }
+        // UX: 簡單檢查格式
+        if (!val.startsWith('AIza')) {
+          if(!confirm('這看起來不像標準的 Gemini API Key (通常以 AIza 開頭)。確定要儲存嗎？')) {
+            return;
+          }
+        }
+        localStorage.setItem('hr_custom_api_key', val);
+        updateUIState();
+        closeModal();
+        alert('✅ API Key 設定成功！接下來的請求將優先使用您的金鑰。');
+      });
+
+      // 清除 Key
+      clearBtn.addEventListener('click', () => {
+        if(confirm('確定要移除自定義金鑰嗎？將恢復使用系統預設值。')) {
+          localStorage.removeItem('hr_custom_api_key');
+          input.value = '';
+          updateUIState();
+          closeModal();
+        }
+      });
+
+      // 初始化
+      updateUIState();
+    })();
   </script>
 </body>
 </html>

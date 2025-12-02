@@ -70,7 +70,7 @@ export async function generateText(
         throw new Error(`OpenAI API 錯誤 (${response.status}): ${errorText}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.choices[0]?.message?.content || '';
     } catch (error) {
       console.error('OpenAI API Error:', error);
@@ -180,7 +180,7 @@ export async function generateChat(
       const err = await response.text();
       throw new Error(`OpenAI API Error: ${err}`);
     }
-    const data = await response.json();
+    const data = await response.json() as any;
     return data.choices[0]?.message?.content || '';
   }
 

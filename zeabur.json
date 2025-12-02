@@ -3,6 +3,6 @@
     "command": "npm install && npx prisma generate && npm run build"
   },
   "start": {
-    "command": "npx prisma db push && npm start"
+    "command": "prisma db push --skip-generate && node dist/index.js"
   }
 }

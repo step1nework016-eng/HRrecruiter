@@ -49,4 +49,4 @@ EXPOSE 3000
 
 # 修改：在啟動時執行 db push，確保 Schema 同步
 # 使用 sh -c 來執行多個指令
-CMD ["sh", "-c", "npx prisma db push && npm start"]
+CMD ["sh", "-c", "prisma db push --skip-generate && node dist/index.js"]

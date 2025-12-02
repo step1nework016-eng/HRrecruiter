@@ -9,6 +9,7 @@ interface HrAgentRequest {
   step: 'job_intake' | 'sourcing' | 'screening' | 'interview';
   input: string;
   mode?: 'normal' | 'retry';
+  apiKey?: string;
 }
 
 /**
@@ -18,7 +19,7 @@ interface HrAgentRequest {
 router.post('/', async (req: Request, res: Response) => {
   console.log(`[HR Agent] 收到請求: ${req.method} ${req.path}`);
   try {
-    const { step, input, mode = 'normal' }: HrAgentRequest = req.body;
+    const { step, input, mode = 'normal', apiKey }: HrAgentRequest = req.body;
 
     // 驗證輸入
     if (!step || !input) {
@@ -38,7 +39,7 @@ router.post('/', async (req: Request, res: Response) => {
     console.log(`[HR Agent] 步驟: ${step}, 模式: ${mode}, 輸入長度: ${input.length}`);
 
     // 呼叫 LLM（現在返回自然語言，不需要解析 JSON）
-    const rawResponse = await generateText(prompt, temperature);
+    const rawResponse = await generateText(prompt, temperature, apiKey);
 
     // 清理 LLM 可能輸出的奇怪標記（如 _STRONGSTART_、_STRONGEND_ 等）
     // 這個清理函數會處理所有四個功能（job_intake, sourcing, screening, interview）

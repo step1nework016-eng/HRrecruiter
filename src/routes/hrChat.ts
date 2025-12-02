@@ -8,6 +8,7 @@ const router = Router();
 interface ChatRequest {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   stream?: boolean; // 是否使用流式輸出
+  apiKey?: string;
 }
 
 /**
@@ -16,7 +17,7 @@ interface ChatRequest {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { messages, stream = false }: ChatRequest = req.body;
+    const { messages, stream = false, apiKey }: ChatRequest = req.body;
 
     // 驗證輸入
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -49,7 +50,7 @@ router.post('/', async (req: Request, res: Response) => {
           // ⭐ 最終清理：必須在所有處理的最後調用
           cleanedChunk = finalScrub(cleanedChunk);
           res.write(`data: ${JSON.stringify({ chunk: cleanedChunk })}\n\n`);
-        });
+        }, apiKey);
 
         // 發送結束標記
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
@@ -62,7 +63,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // 非流式輸出（原有邏輯）
-    const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT);
+    const reply = await generateChat(messages, CHAT_SYSTEM_PROMPT, apiKey);
     
     // 清理 LLM 可能輸出的奇怪標記
     let cleanedReply = cleanStrongMarkers(reply);

@@ -48,6 +48,15 @@ export function finalScrub(text: string): string {
   cleaned = cleaned.replace(/[_*\s]*STRONG[_\s]*(START|END)[_*\s]*/gi, '');
   cleaned = cleaned.replace(/[_*\s]*(START|END)[_\s]*STRONG[_*\s]*/gi, '');
 
+  // ⭐ 新增：移除孤立的底線（如果標記被部分移除）
+  // 但保留普通的單底線（如 snake_case）
+  // 移除開頭或結尾的底線
+  cleaned = cleaned.replace(/^_+\s*/, '');
+  cleaned = cleaned.replace(/\s*_+$/, '');
+  
+  // 移除被空格包圍的底線 ( _ )
+  cleaned = cleaned.replace(/\s+_\s+/g, ' ');
+  
   // 最終檢查：如果還有標記，再次清理（確保不會遺漏）
   if (cleaned.includes('STRONGSTART') || cleaned.includes('STRONGEND')) {
     cleaned = cleaned.replace(/STRONGSTART/gi, '');
@@ -131,4 +140,3 @@ export function cleanStrongMarkers(text: string): string {
   
   return cleaned;
 }
-

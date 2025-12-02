@@ -46,5 +46,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
-CMD ["npm", "start"]
 
+# 修改：在啟動時執行 db push，確保 Schema 同步
+# 使用 sh -c 來執行多個指令
+CMD ["sh", "-c", "npx prisma db push && npm start"]

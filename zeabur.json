@@ -1,0 +1,10 @@
+{
+  "service": "hr-agent-backend",
+  "build": {
+    "command": "npm run build"
+  },
+  "start": {
+    "command": "npx prisma db push && npm start"
+  }
+}
+

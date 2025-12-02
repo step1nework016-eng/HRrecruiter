@@ -27,25 +27,47 @@ STRONGSTART、STRONG_END、STRONGEND、_STRONGSTART_ 等所有變體。
 /**
  * 取得指定步驟的 Prompt
  */
-export function getPrompt(step: StepType, input: string, isRetry: boolean = false): string {
+export function getPrompt(
+  step: StepType, 
+  input: string, 
+  isRetry: boolean = false,
+  language: string = 'zh-TW',
+  customInstruction?: string
+): string {
   const retryHint = isRetry ? '\n\n請產出一個與之前不同的版本，可以從不同角度或重點來呈現。' : '';
+  
+  // 語言設定
+  let langInstruction = '';
+  if (language === 'en') {
+    langInstruction = '\n\nPlease output the entire response in English.';
+  } else if (language === 'ja') {
+    langInstruction = '\n\n回答全体を日本語で出力してください。';
+  } else {
+    langInstruction = '\n\n請以繁體中文（Traditional Chinese）輸出完整回應。';
+  }
 
+  // 自訂指令
+  const customInstructionText = customInstruction ? `\n\n【使用者額外指令】：\n${customInstruction}` : '';
+
+  let basePrompt = '';
   switch (step) {
     case 'job_intake':
-      return getJobIntakePrompt(input) + retryHint;
-
+      basePrompt = getJobIntakePrompt(input);
+      break;
     case 'sourcing':
-      return getSourcingPrompt(input) + retryHint;
-
+      basePrompt = getSourcingPrompt(input);
+      break;
     case 'screening':
-      return getScreeningPrompt(input) + retryHint;
-
+      basePrompt = getScreeningPrompt(input);
+      break;
     case 'interview':
-      return getInterviewPrompt(input) + retryHint;
-
+      basePrompt = getInterviewPrompt(input);
+      break;
     default:
       throw new Error(`未知的步驟類型: ${step}`);
   }
+
+  return basePrompt + retryHint + customInstructionText + langInstruction;
 }
 
 /**
@@ -227,7 +249,19 @@ ${input}
 /**
  * Chat 功能的系統提示詞
  */
-export const CHAT_SYSTEM_PROMPT = `${FORBIDDEN_MARKERS_SYSTEM_PROMPT}
+export function getChatSystemPrompt(language: string = 'zh-TW', customInstruction?: string): string {
+  let langInstruction = '';
+  if (language === 'en') {
+    langInstruction = '\nPlease output in English.';
+  } else if (language === 'ja') {
+    langInstruction = '\n日本語で出力してください。';
+  } else {
+    langInstruction = '\n請以繁體中文輸出。';
+  }
+
+  const customInstructionText = customInstruction ? `\n\n【使用者額外指令】：${customInstruction}` : '';
+
+  return `${FORBIDDEN_MARKERS_SYSTEM_PROMPT}
 
 你是一位專門協助 HR 和招募顧問的 AI 助理。你的專長包括：
 
@@ -238,5 +272,7 @@ export const CHAT_SYSTEM_PROMPT = `${FORBIDDEN_MARKERS_SYSTEM_PROMPT}
 5. 履歷評估與篩選建議
 6. 面試評估與決策支援
 
-請以專業、友善、實用的方式回答問題，並提供具體可行的建議。如果使用者詢問的問題與招募相關，請盡量提供結構化的回答。`;
-
+請以專業、友善、實用的方式回答問題，並提供具體可行的建議。如果使用者詢問的問題與招募相關，請盡量提供結構化的回答。${langInstruction}${customInstructionText}`;
+}
+// 保留舊的常數以相容舊程式碼，但建議改用 getChatSystemPrompt
+export const CHAT_SYSTEM_PROMPT = getChatSystemPrompt();

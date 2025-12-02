@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <title>招募顧問 AI 智能體 </title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <!-- Driver.js for Tour -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+  <!-- html2pdf for Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <style>
     :root {
       --bg: #ffffff;
@@ -863,6 +869,33 @@
       color: var(--accent);
       background: #f0f9ff;
     }
+    
+    /* AI 工具庫宣傳按鈕 */
+    .btn-promo {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      margin-top: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-promo:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+    }
+    .btn-promo:active {
+      transform: translateY(0);
+    }
 
     /* 模態視窗 (Modal) 優化 */
     .modal-overlay {
@@ -925,9 +958,110 @@
       background: #dcfce7;
       color: #166534;
     }
+
+    /* Skeleton Loading */
+    .skeleton {
+      animation: skeleton-loading 1s linear infinite alternate;
+      width: 100%;
+      height: 16px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .skeleton-text {
+      width: 80%;
+      height: 16px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    @keyframes skeleton-loading {
+      0% { background-color: #f3f4f6; }
+      100% { background-color: #e5e7eb; }
+    }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 8px 16px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      z-index: 1000;
+      box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .mobile-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--text-soft);
+      padding: 4px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .mobile-nav-item.active {
+      color: var(--accent);
+      background: #f0f9ff;
+    }
+    .mobile-nav-icon {
+      font-size: 20px;
+    }
+
+    @media (max-width: 900px) {
+      /* Hide Sidebar on Mobile */
+      .app-shell {
+        grid-template-columns: 1fr;
+        padding-bottom: 80px; /* Space for bottom nav */
+      }
+      aside.card {
+        display: none;
+      }
+      .mobile-bottom-nav {
+        display: flex;
+        justify-content: space-around;
+      }
+      /* Adjust Tool Modal for Mobile */
+      .tool-modal {
+        padding-bottom: 80px;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <div class="mobile-nav-item active" data-step="1">
+      <span class="mobile-nav-icon">📋</span>
+      <span>職缺</span>
+    </div>
+    <div class="mobile-nav-item" data-step="2">
+      <span class="mobile-nav-icon">🔍</span>
+      <span>搜尋</span>
+    </div>
+    <div class="mobile-nav-item" data-step="3">
+      <span class="mobile-nav-icon">⚖️</span>
+      <span>篩選</span>
+    </div>
+    <div class="mobile-nav-item" data-step="4">
+      <span class="mobile-nav-icon">💬</span>
+      <span>面試</span>
+    </div>
+    <div class="mobile-nav-item" id="mobile-nav-chat">
+      <span class="mobile-nav-icon">🤖</span>
+      <span>AI對話</span>
+    </div>
+    <div class="mobile-nav-item" id="mobile-nav-settings">
+      <span class="mobile-nav-icon">⚙️</span>
+      <span>設定</span>
+    </div>
+  </nav>
+
   <!-- 歡迎動畫頁面 -->
   <div class="welcome-screen" id="welcome-screen">
     <div class="welcome-logo">HR</div>
@@ -982,6 +1116,12 @@
           <span id="settings-icon">⚙️</span> 
           <span id="settings-text">設定 API Key</span>
         </button>
+
+        <!-- AI 工具庫宣傳 -->
+        <a href="https://aitools.aijob.com.tw/" target="_blank" class="btn-promo">
+          <span>🚀</span> 
+          <span>探索更多 AI 工具庫</span>
+        </a>
 
         <div style="font-size: 11px; color: var(--text-soft); line-height: 1.5; margin-top: 12px;">
           手機版：點上面的功能，<br />
@@ -1046,9 +1186,17 @@
             <!-- 左：輸入 -->
             <div>
               <h4>輸入（HR 貼上內容）</h4>
-              <p class="hint" id="input-hint">
-                目前步驟：職缺需求（Job Intake）。請貼上完整 JD。
-              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <p class="hint" id="input-hint" style="margin-bottom: 0;">
+                  目前步驟：職缺需求（Job Intake）。請貼上完整 JD。
+                </p>
+                <div style="position: relative;">
+                  <input type="file" id="file-upload" style="display: none;" accept=".txt,.pdf,.docx,.doc">
+                  <button class="btn-settings" id="btn-upload-file" style="margin-top: 0; padding: 4px 10px; font-size: 11px; width: auto;">
+                    📂 上傳檔案
+                  </button>
+                </div>
+              </div>
               <textarea id="input-text" spellcheck="false">職缺：短影音剪輯師
 
 我們是一間專門做 AI、短影音教學的公司，正在找一位全職短影音剪輯師，負責 TikTok、Reels、YouTube Shorts 的剪輯。
@@ -1079,9 +1227,14 @@
             <!-- 右：輸出 -->
             <div>
               <h4>AI 回傳結果</h4>
-              <p class="hint">
-                AI 分析結果將顯示在這裡
-              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <p class="hint" style="margin-bottom: 0;">
+                  AI 分析結果將顯示在這裡
+                </p>
+                <button class="btn-settings" id="btn-export-pdf" style="margin-top: 0; padding: 4px 10px; font-size: 11px; width: auto; display: none;">
+                  📥 匯出 PDF
+                </button>
+              </div>
               <pre id="output-pre">點「開始 AI 分析」後會顯示結果</pre>
             </div>
           </div>
@@ -1198,8 +1351,37 @@
         </div>
       </div>
 
-      <div class="input-group">
-        <input type="password" id="api-key-input" class="input-field" placeholder="貼上 API Key (以 AIza 開頭...)" autocomplete="off">
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main);">選擇模型供應商 (Provider)</label>
+        <select id="provider-select" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: #fff;">
+          <option value="gemini">Google Gemini (推薦)</option>
+          <option value="openai">OpenAI ChatGPT</option>
+        </select>
+      </div>
+
+      <!-- 新增語言與自訂指令 -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main);">輸出語言 (Language)</label>
+        <select id="language-select" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: #fff;">
+          <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+          <option value="en">English</option>
+          <option value="ja">日本語 (Japanese)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main);">額外指令 (Custom Instructions)</label>
+        <textarea id="custom-instruction-input" class="input-field" placeholder="例如：請用語氣活潑一點、多給我一些具體範例..." style="min-height: 80px; resize: vertical;"></textarea>
+      </div>
+
+      <div class="input-group" id="gemini-group">
+        <label style="font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main);">Gemini API Key</label>
+        <input type="password" id="api-key-input" class="input-field" placeholder="貼上 Gemini API Key (以 AIza 開頭...)" autocomplete="off">
+      </div>
+
+      <div class="input-group" id="openai-group" style="display: none;">
+        <label style="font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main);">ChatGPT API Key</label>
+        <input type="password" id="openai-key-input" class="input-field" placeholder="貼上 OpenAI API Key (sk-...)" autocomplete="off">
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -1251,6 +1433,7 @@
     }
 
     const steps = document.querySelectorAll(".step-item");
+    const mobileNavItems = document.querySelectorAll(".mobile-nav-item"); // Mobile Nav
     const mainTitle = document.getElementById("main-title");
     const mainSubtitle = document.getElementById("main-subtitle");
     const inputHint = document.getElementById("input-hint");
@@ -1262,6 +1445,13 @@
     const statusEl = document.getElementById("status");
     const toolModal = document.getElementById("tool-modal");
     const toolCloseBtn = document.getElementById("tool-close-btn");
+    
+    // New Elements
+    const btnUploadFile = document.getElementById("btn-upload-file");
+    const fileUploadInput = document.getElementById("file-upload");
+    const btnExportPdf = document.getElementById("btn-export-pdf");
+    const mobileNavChat = document.getElementById("mobile-nav-chat");
+    const mobileNavSettings = document.getElementById("mobile-nav-settings");
 
     // 全屏對話元件
     const fullscreenChat = document.getElementById("fullscreen-chat");
@@ -1365,6 +1555,32 @@
       closeToolModal();
     });
 
+      // 檢查並獲取有效的 API Key
+      function checkAndGetApiKey() {
+        const provider = localStorage.getItem('hr_provider') || 'gemini';
+        const geminiKey = localStorage.getItem('hr_custom_api_key');
+        const openaiKey = localStorage.getItem('hr_custom_openai_key');
+
+        // 嚴格檢查：必須有對應 Provider 的 Key
+        if (provider === 'gemini' && !geminiKey) {
+          alert('⚠️ 請先設定 Gemini API Key 才能使用此功能');
+          document.getElementById('btn-open-settings').click(); // 自動打開設定視窗
+          return null;
+        }
+        
+        if (provider === 'openai' && !openaiKey) {
+          alert('⚠️ 請先設定 ChatGPT API Key 才能使用此功能');
+          document.getElementById('btn-open-settings').click(); // 自動打開設定視窗
+          return null;
+        }
+
+        return {
+          provider,
+          apiKey: geminiKey,
+          openaiKey: openaiKey
+        };
+      }
+
     // 呼叫 hr-agent 的共用 function
     async function callHrAgent(isRetry = false) {
       const text = inputText.value.trim();
@@ -1373,18 +1589,34 @@
         return;
       }
 
+      // 檢查 API Key
+      const keyConfig = checkAndGetApiKey();
+      if (!keyConfig) {
+        setStatus("error", "請先設定 API Key");
+        return;
+      }
+
       const conf = STEP_CONFIG[currentStep];
 
       runBtn.disabled = true;
       retryBtn.disabled = true;
       copyBtn.disabled = true;
+      btnExportPdf.style.display = 'none'; // 隱藏匯出按鈕
 
       const actionText = isRetry ? "（再換一個）" : "";
       setStatus(
         "loading",
         "正在處理中，請稍候…" + actionText
       );
-      outputPre.textContent = "請稍候，AI 正在分析中…";
+      
+      // Skeleton Loading
+      outputPre.innerHTML = `
+        <div class="skeleton" style="width: 60%;"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton" style="width: 80%;"></div>
+        <div class="skeleton"></div>
+      `;
 
       try {
         const res = await fetch(API_URL, {
@@ -1394,7 +1626,11 @@
             step: conf.stepKey,
             input: text,
             mode: isRetry ? "retry" : "normal",
-            apiKey: localStorage.getItem('hr_custom_api_key') || undefined
+            apiKey: keyConfig.apiKey || undefined,
+            provider: keyConfig.provider,
+            openaiKey: keyConfig.openaiKey || undefined,
+            language: localStorage.getItem('hr_language') || 'zh-TW',
+            customInstruction: localStorage.getItem('hr_custom_instruction') || undefined
           })
         });
 
@@ -1435,6 +1671,9 @@
         // 使用 innerHTML 並轉換 markdown 格式（移除 ** 和 * 符號，轉為 HTML）
         outputPre.innerHTML = markdownToNaturalLanguage(cleanedText);
         setStatus("", "分析完成！");
+        
+        // 顯示匯出按鈕
+        btnExportPdf.style.display = 'inline-flex';
 
         // ⭐ 存起來給「複製」用（保存清理後的文本）
         lastResultPayload = {
@@ -1835,6 +2074,16 @@
       setChatStatus("AI 正在思考…");
 
       try {
+        // 檢查 API Key
+        const keyConfig = checkAndGetApiKey();
+        if (!keyConfig) {
+          sendBtn.disabled = false;
+          isThinking = false;
+          renderChat();
+          setChatStatus("請先設定 API Key");
+          return;
+        }
+
         // 查詢歷史結果作為上下文（只在第一次對話時加入，避免重複）
         let contextMessages = [...chatHistory];
         const isFirstMessage = chatHistory.length === 1; // 只有一條訊息（剛加入的用戶問題）
@@ -1882,7 +2131,11 @@
           body: JSON.stringify({
             messages: contextMessages,
             stream: true,
-            apiKey: localStorage.getItem('hr_custom_api_key') || undefined
+            apiKey: keyConfig.apiKey || undefined,
+            provider: keyConfig.provider,
+            openaiKey: keyConfig.openaiKey || undefined,
+            language: localStorage.getItem('hr_language') || 'zh-TW',
+            customInstruction: localStorage.getItem('hr_custom_instruction') || undefined
           })
         });
 
@@ -2050,28 +2303,58 @@
       const cancelBtn = document.getElementById('btn-cancel-settings');
       const saveBtn = document.getElementById('btn-save-settings');
       const clearBtn = document.getElementById('btn-clear-key');
-      const input = document.getElementById('api-key-input');
+      
+      const providerSelect = document.getElementById('provider-select');
+      const geminiGroup = document.getElementById('gemini-group');
+      const openaiGroup = document.getElementById('openai-group');
+      const geminiInput = document.getElementById('api-key-input');
+      const openaiInput = document.getElementById('openai-key-input');
+      
       const badge = document.getElementById('key-status-badge');
       const settingsText = document.getElementById('settings-text');
       const settingsBtn = document.getElementById('btn-open-settings');
+
+      // 切換顯示
+      providerSelect.addEventListener('change', () => {
+        if (providerSelect.value === 'gemini') {
+          geminiGroup.style.display = 'block';
+          openaiGroup.style.display = 'none';
+        } else {
+          geminiGroup.style.display = 'none';
+          openaiGroup.style.display = 'block';
+        }
+      });
 
       // 讀取 Key
       function getCustomApiKey() {
         return localStorage.getItem('hr_custom_api_key') || '';
       }
+      function getOpenAIKey() {
+        return localStorage.getItem('hr_custom_openai_key') || '';
+      }
+      function getProvider() {
+        return localStorage.getItem('hr_provider') || 'gemini';
+      }
 
       // 更新 UI 狀態
       function updateUIState() {
-        const key = getCustomApiKey();
-        if (key) {
+        const provider = getProvider();
+        const geminiKey = getCustomApiKey();
+        const openaiKey = getOpenAIKey();
+        
+        let hasKey = false;
+        if (provider === 'gemini' && geminiKey) hasKey = true;
+        if (provider === 'openai' && openaiKey) hasKey = true;
+
+        if (hasKey) {
           badge.classList.add('active');
-          badge.innerHTML = '<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 使用自定義 Key';
+          badge.innerHTML = `<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 使用 ${provider === 'gemini' ? 'Gemini' : 'ChatGPT'} Key`;
           clearBtn.style.display = 'flex';
           settingsBtn.classList.add('active');
-          settingsText.textContent = '已設定 API Key';
+          settingsText.textContent = `已設定 ${provider === 'gemini' ? 'Gemini' : 'ChatGPT'}`;
         } else {
           badge.classList.remove('active');
-          badge.innerHTML = '<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 使用系統預設';
+          badge.innerHTML = '<span class="dot" style="width:6px;height:6px;background:currentColor;border-radius:50%;"></span> 未設定 Key';
           clearBtn.style.display = 'none';
           settingsBtn.classList.remove('active');
           settingsText.textContent = '設定 API Key';
@@ -2080,9 +2363,15 @@
 
       // 開啟 Modal
       openBtn.addEventListener('click', () => {
-        input.value = getCustomApiKey(); // 預填目前的 Key
+        const currentProvider = getProvider();
+        providerSelect.value = currentProvider;
+        geminiInput.value = getCustomApiKey();
+        openaiInput.value = getOpenAIKey();
+        
+        // 觸發顯示切換
+        providerSelect.dispatchEvent(new Event('change'));
+        
         modal.classList.add('open');
-        input.focus();
       });
 
       // 關閉 Modal
@@ -2096,30 +2385,50 @@
         if (e.target === modal) closeModal();
       });
 
-      // 儲存 Key (含簡單驗證)
+      // 儲存 Key
       saveBtn.addEventListener('click', () => {
-        const val = input.value.trim();
-        if (!val) {
-          closeModal();
+        const provider = providerSelect.value;
+        const gKey = geminiInput.value.trim();
+        const oKey = openaiInput.value.trim();
+
+        // 驗證當前選擇的 Provider 是否有 Key
+        if (provider === 'gemini' && !gKey) {
+          alert('請輸入 Gemini API Key');
           return;
         }
-        // UX: 簡單檢查格式
-        if (!val.startsWith('AIza')) {
-          if(!confirm('這看起來不像標準的 Gemini API Key (通常以 AIza 開頭)。確定要儲存嗎？')) {
-            return;
-          }
+        if (provider === 'openai' && !oKey) {
+          alert('請輸入 ChatGPT API Key');
+          return;
         }
-        localStorage.setItem('hr_custom_api_key', val);
+
+        // 簡單格式檢查
+        if (provider === 'gemini' && gKey && !gKey.startsWith('AIza')) {
+          if(!confirm('這看起來不像標準的 Gemini API Key (通常以 AIza 開頭)。確定要儲存嗎？')) return;
+        }
+        if (provider === 'openai' && oKey && !oKey.startsWith('sk-')) {
+          if(!confirm('這看起來不像標準的 OpenAI API Key (通常以 sk- 開頭)。確定要儲存嗎？')) return;
+        }
+
+        localStorage.setItem('hr_provider', provider);
+        if (gKey) localStorage.setItem('hr_custom_api_key', gKey);
+        if (oKey) localStorage.setItem('hr_custom_openai_key', oKey);
+
         updateUIState();
         closeModal();
-        alert('✅ API Key 設定成功！接下來的請求將優先使用您的金鑰。');
+        alert(`✅ 設定成功！目前使用模型：${provider === 'gemini' ? 'Google Gemini' : 'OpenAI ChatGPT'}`);
       });
 
       // 清除 Key
       clearBtn.addEventListener('click', () => {
-        if(confirm('確定要移除自定義金鑰嗎？將恢復使用系統預設值。')) {
+        if(confirm('確定要移除所有儲存的金鑰並恢復預設值嗎？')) {
           localStorage.removeItem('hr_custom_api_key');
-          input.value = '';
+          localStorage.removeItem('hr_custom_openai_key');
+          localStorage.removeItem('hr_provider');
+          
+          geminiInput.value = '';
+          openaiInput.value = '';
+          providerSelect.value = 'gemini';
+          
           updateUIState();
           closeModal();
         }
@@ -2127,6 +2436,136 @@
 
       // 初始化
       updateUIState();
+
+      // 語言與自訂指令設定
+      const langSelect = document.getElementById('language-select');
+      const customInstInput = document.getElementById('custom-instruction-input');
+
+      // 載入設定
+      langSelect.value = localStorage.getItem('hr_language') || 'zh-TW';
+      customInstInput.value = localStorage.getItem('hr_custom_instruction') || '';
+
+      // 儲存設定
+      saveBtn.addEventListener('click', () => {
+        // ... (原有的 API Key 儲存邏輯)
+        localStorage.setItem('hr_language', langSelect.value);
+        localStorage.setItem('hr_custom_instruction', customInstInput.value);
+      });
+    })();
+
+    // === 新增功能邏輯 ===
+    (function() {
+      // 1. 檔案上傳
+      const btnUpload = document.getElementById('btn-upload-file');
+      const fileInput = document.getElementById('file-upload');
+      const inputText = document.getElementById('input-text');
+
+      btnUpload.addEventListener('click', () => fileInput.click());
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 顯示載入中
+        inputText.value = "正在讀取檔案...";
+        inputText.disabled = true;
+
+        try {
+          const res = await fetch('/api/parse', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!res.ok) throw new Error('檔案讀取失敗');
+          
+          const data = await res.json();
+          inputText.value = data.text;
+        } catch (error) {
+          console.error(error);
+          alert('檔案讀取失敗，請確認檔案格式是否正確');
+          inputText.value = "";
+        } finally {
+          inputText.disabled = false;
+          fileInput.value = ""; // 重置 input
+        }
+      });
+
+      // 2. 匯出 PDF
+      const btnExport = document.getElementById('btn-export-pdf');
+      const outputPre = document.getElementById('output-pre');
+      
+      btnExport.addEventListener('click', () => {
+        const element = outputPre;
+        const opt = {
+          margin:       10,
+          filename:     `HR_Result_${new Date().toISOString().slice(0,10)}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2 },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // 使用 html2pdf
+        // @ts-ignore
+        html2pdf().set(opt).from(element).save();
+      });
+
+      // 3. 手機版導航
+      const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+      const steps = document.querySelectorAll('.step-item');
+      
+      mobileNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+          // 移除所有 active
+          mobileNavItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+
+          const step = item.dataset.step;
+          if (step) {
+            // 切換步驟
+            steps.forEach(s => {
+              if (s.dataset.step === step) s.click();
+            });
+            // 關閉 Chat/Settings if open
+            const fullscreenChat = document.getElementById('fullscreen-chat');
+            fullscreenChat.classList.remove('active');
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('open');
+          } else if (item.id === 'mobile-nav-chat') {
+            // 打開 Chat
+            document.getElementById('sidebar-enter-chat-btn').click();
+          } else if (item.id === 'mobile-nav-settings') {
+            // 打開 Settings
+            document.getElementById('btn-open-settings').click();
+          }
+        });
+      });
+
+      // 4. 導覽 (Tour)
+      // 檢查是否是第一次訪問
+      if (!localStorage.getItem('hr_tour_completed_v1')) {
+        setTimeout(() => {
+          const driver = window.driver.js.driver;
+          
+          const driverObj = driver({
+            showProgress: true,
+            steps: [
+              { element: '.logo-circle', popover: { title: '歡迎使用 HR 智能體', description: '這是您的 AI 招募助手。' } },
+              { element: '.step-list', popover: { title: '四大功能', description: '從職缺分析到面試評估，依序完成招募流程。' } },
+              { element: '#input-text', popover: { title: '輸入資料', description: '在這裡貼上 JD 或履歷，或是直接上傳檔案。' } },
+              { element: '#run-btn', popover: { title: '開始分析', description: '點擊這裡讓 AI 為您生成專業建議。' } },
+              { element: '#sidebar-enter-chat-btn', popover: { title: 'AI 對話', description: '分析完後，可以在這裡跟 AI 進一步討論細節。' } }
+            ],
+            onDestroyed: () => {
+               localStorage.setItem('hr_tour_completed_v1', 'true');
+            }
+          });
+
+          driverObj.drive();
+        }, 3000); // 等待歡迎動畫結束
+      }
     })();
   </script>
 </body>

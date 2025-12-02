@@ -1,23 +1,32 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FORBIDDEN_MARKERS_SYSTEM_PROMPT } from './prompts';
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error('GEMINI_API_KEY 環境變數未設定');
-}
+const defaultApiKey = process.env.GEMINI_API_KEY;
+const defaultGenAI = defaultApiKey ? new GoogleGenerativeAI(defaultApiKey) : null;
 
-const genAI = new GoogleGenerativeAI(apiKey);
+function getGenAIClient(customApiKey?: string) {
+  if (customApiKey) {
+    return new GoogleGenerativeAI(customApiKey);
+  }
+  if (defaultGenAI) {
+    return defaultGenAI;
+  }
+  throw new Error('未設定 API Key。請在環境變數設定 GEMINI_API_KEY 或在前端設定您的 API Key (BYOK)。');
+}
 
 /**
  * 呼叫 Gemini API 進行文字生成
  * @param prompt 提示詞
  * @param temperature 溫度參數（0-1，越高越隨機）
+ * @param apiKey (可選) 使用者自定義 API Key
  * @returns AI 回覆的文字內容
  */
 export async function generateText(
   prompt: string,
-  temperature: number = 0.7
+  temperature: number = 0.7,
+  apiKey?: string
 ): Promise<string> {
+  const genAI = getGenAIClient(apiKey);
   const maxRetries = 3;
   const retryDelay = 2000; // 2秒
   
@@ -109,12 +118,15 @@ export async function generateText(
  * 呼叫 Gemini API 進行對話（支援多輪對話）
  * @param messages 對話歷史 [{ role: 'user' | 'assistant', content: string }]
  * @param systemPrompt 系統提示詞（可選）
+ * @param apiKey (可選) 使用者自定義 API Key
  * @returns AI 回覆的文字內容
  */
 export async function generateChat(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  systemPrompt?: string
+  systemPrompt?: string,
+  apiKey?: string
 ): Promise<string> {
+  const genAI = getGenAIClient(apiKey);
   const maxRetries = 3;
   const retryDelay = 2000; // 2秒
   
@@ -232,13 +244,16 @@ export async function generateChat(
  * @param messages 對話歷史 [{ role: 'user' | 'assistant', content: string }]
  * @param systemPrompt 系統提示詞（可選）
  * @param onChunk 每收到一個文字塊時的回調函數
+ * @param apiKey (可選) 使用者自定義 API Key
  * @returns AI 回覆的完整文字內容
  */
 export async function generateChatStream(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   systemPrompt?: string,
-  onChunk?: (text: string) => void
+  onChunk?: (text: string) => void,
+  apiKey?: string
 ): Promise<string> {
+  const genAI = getGenAIClient(apiKey);
   const maxRetries = 3;
   const retryDelay = 2000; // 2秒
   

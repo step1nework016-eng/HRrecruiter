@@ -6,6 +6,7 @@ import hrAgentRouter from './routes/hrAgent';
 import hrChatRouter from './routes/hrChat';
 import hrSaveRouter from './routes/hrSave';
 import hrSavedRouter from './routes/hrSaved';
+import parseRouter from './routes/parse';
 
 // 載入環境變數
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/hr-agent', hrAgentRouter);
 app.use('/api/hr-chat', hrChatRouter);
 app.use('/api/hr-save', hrSaveRouter);
 app.use('/api/hr-saved', hrSavedRouter);
+app.use('/api/parse', parseRouter);
 
 // 調試：確認路由已載入
 console.log('✅ API 路由已註冊:');
@@ -58,6 +60,7 @@ console.log('   POST /api/hr-agent');
 console.log('   POST /api/hr-chat');
 console.log('   POST /api/hr-save');
 console.log('   GET  /api/hr-saved');
+console.log('   POST /api/parse');
 
 // 提供靜態檔案（前端）
 // 在編譯後，__dirname 會是 dist/，所以 public 在 ../public

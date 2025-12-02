@@ -9,6 +9,10 @@
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
   <!-- html2pdf for Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Google Fonts for Japanese Support -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -2499,17 +2503,48 @@
       
       btnExport.addEventListener('click', () => {
         const element = outputPre;
+        
+        // 處理分頁截斷問題 (page-break)
+        // 在生成 PDF 前，我們可以先 clone 一份並設定樣式
+        const clonedElement = element.cloneNode(true);
+        clonedElement.style.width = '100%';
+        clonedElement.style.height = 'auto';
+        clonedElement.style.overflow = 'visible';
+        clonedElement.style.maxHeight = 'none';
+        clonedElement.style.fontFamily = '"Noto Sans TC", "Noto Sans JP", sans-serif'; // 確保字型支援
+
+        // 創建一個臨時容器來放置 clone 的元素，避免影響畫面
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '800px'; // A4 寬度約 210mm (793px @ 96dpi)
+        container.appendChild(clonedElement);
+        document.body.appendChild(container);
+
         const opt = {
-          margin:       10,
+          margin:       15,
           filename:     `HR_Result_${new Date().toISOString().slice(0,10)}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2 },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          html2canvas:  { 
+            scale: 2, 
+            useCORS: true,
+            letterRendering: true, // 改善文字渲染
+            scrollY: 0 
+          },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
         };
         
         // 使用 html2pdf
         // @ts-ignore
-        html2pdf().set(opt).from(element).save();
+        html2pdf().set(opt).from(clonedElement).save().then(() => {
+          document.body.removeChild(container); // 清理
+        }).catch(err => {
+          console.error('PDF Export Error:', err);
+          alert('匯出 PDF 失敗，請稍後再試');
+          document.body.removeChild(container);
+        });
       });
 
       // 3. 手機版導航
